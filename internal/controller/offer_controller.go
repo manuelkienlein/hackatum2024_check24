@@ -81,12 +81,31 @@ func (oc *OfferController) GetOffersHandler(c *fiber.Ctx) error {
 		PageSize:              c.QueryInt("pageSize"),
 		PriceRangeWidth:       c.QueryInt("priceRangeWidth"),
 		MinFreeKilometerWidth: c.QueryInt("minFreeKilometerWidth"),
-		MinNumberSeats:        c.QueryInt("minNumberSeats", 0),
-		MinPrice:              c.QueryInt("minPrice", 0),
-		MaxPrice:              c.QueryInt("maxPrice", 0),
-		CarType:               c.Query("carType"),
-		OnlyVollkasko:         c.Query("onlyVollkasko") == "true",
-		MinFreeKilometer:      c.QueryInt("minFreeKilometer", 0),
+	}
+
+	if minNumberSeats := c.QueryInt("minNumberSeats", 0); minNumberSeats > 0 {
+		params.MinNumberSeats = &minNumberSeats
+	}
+
+	if minPrice := c.QueryInt("minPrice", 0); minPrice >= 0 {
+		params.MinPrice = &minPrice
+	}
+
+	if maxPrice := c.QueryInt("maxPrice", -1); maxPrice >= 0 {
+		params.MaxPrice = &maxPrice
+	}
+
+	if carType := c.Query("carType"); carType != "" {
+		params.CarType = &carType
+	}
+
+	if onlyVollkasko := c.Query("onlyVollkasko"); onlyVollkasko != "" {
+		onlyVollkasko := onlyVollkasko == "true"
+		params.OnlyVollkasko = &onlyVollkasko
+	}
+
+	if minFreeKilometer := c.QueryInt("minFreeKilometer", -1); minFreeKilometer >= 0 {
+		params.MinFreeKilometer = &minFreeKilometer
 	}
 
 	response, err := oc.offerService.GetOffers(c, params)

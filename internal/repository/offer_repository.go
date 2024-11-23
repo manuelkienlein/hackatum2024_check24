@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -85,17 +84,17 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 	argIdx := len(args)
 
 	// Add dynamic filters
-	if params.MinNumberSeats > 0 {
+	if params.MinNumberSeats != nil {
 		argIdx++
 		query += ` AND o.number_seats >= $` + strconv.Itoa(argIdx)
 		args = append(args, params.MinNumberSeats)
 	}
-	if params.CarType != "" {
+	if params.CarType != nil {
 		argIdx++
 		query += ` AND o.car_type = $` + strconv.Itoa(argIdx)
 		args = append(args, params.CarType)
 	}
-	if params.OnlyVollkasko {
+	if params.OnlyVollkasko != nil {
 		argIdx++
 		query += ` AND o.only_vollkasko = $` + strconv.Itoa(argIdx)
 		args = append(args, params.OnlyVollkasko)
@@ -114,44 +113,4 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 	}
 
 	return rows, err
-}
-
-// Helper function to build the SQL query
-func buildSQLQuery(params models.OfferFilterParams) string {
-	query := "SELECT ID, data FROM offers WHERE 1=1"
-
-	query += fmt.Sprintf(" AND mostSpecificRegionID = %d", params.RegionID)
-	query += fmt.Sprintf(" AND startDate >= %d", params.TimeRangeStart)
-	query += fmt.Sprintf(" AND endDate <= %d", params.TimeRangeEnd)
-	query += fmt.Sprintf(" AND julianday(endDate, 'unixepoch') - julianday(startDate, 'unixepoch') >= %d", params.NumberDays)
-
-	if params.MinPrice > 0 {
-		query += fmt.Sprintf(" AND price >= %d", params.MinPrice)
-	}
-	if params.MaxPrice > 0 {
-		query += fmt.Sprintf(" AND price < %d", params.MaxPrice)
-	}
-	if params.MinNumberSeats > 0 {
-		query += fmt.Sprintf(" AND numberSeats >= %d", params.MinNumberSeats)
-	}
-	if params.MinFreeKilometer > 0 {
-		query += fmt.Sprintf(" AND freeKilometers >= %d", params.MinFreeKilometer)
-	}
-	if params.CarType != "" {
-		query += fmt.Sprintf(" AND carType = '%s'", params.CarType)
-	}
-	if params.OnlyVollkasko {
-		query += " AND hasVollkasko = 1"
-	}
-
-	if params.SortOrder == "price-asc" {
-		query += " ORDER BY price ASC, ID ASC"
-	} else if params.SortOrder == "price-desc" {
-		query += " ORDER BY price DESC, ID ASC"
-	}
-
-	offset := (params.Page - 1) * params.PageSize
-	query += fmt.Sprintf(" LIMIT %d OFFSET %d", params.PageSize, offset)
-
-	return query
 }
