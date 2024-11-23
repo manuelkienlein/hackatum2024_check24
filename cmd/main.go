@@ -10,6 +10,8 @@ import (
 
 func main() {
 
+	log.Println("Starting application...")
+
 	// PostgreSQL-Verbindung herstellen
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -25,6 +27,7 @@ func main() {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
+	log.Println("Starting webserver...")
 	app := fiber.New()
 
 	// Register routes

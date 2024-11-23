@@ -5,5 +5,6 @@
 
 Postgres Database
 
-postgres
-pg#pass123
+Database: postgres
+User: postgres
+Password: pg#pass123
