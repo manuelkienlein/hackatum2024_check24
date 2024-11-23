@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v2"
 	"log"
 	"server/internal"
@@ -44,6 +45,16 @@ func main() {
 
 	// Register routes
 	internal.RegisterRoutes(app, dbPool)
+
+	// Add swagger
+	cfg := swagger.Config{
+		BasePath: "/",
+		FilePath: "./docs/openapi.yaml",
+		Path:     "openapi",
+		Title:    "Swagger API Docs",
+	}
+
+	app.Use(swagger.New(cfg))
 
 	// Start server
 	err = app.Listen(":80")
