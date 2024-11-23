@@ -30,8 +30,20 @@ def main():
                 if last_error_count > 0: 
                     print("+", last_error_count)
                     last_error_count = 0
-                print(f"ERROR at request {index}", log["search_error"])
+                print(f"Search ERROR at request {index}", log["search_error"])
                 last_error = log["search_error"]
+        if "write_error" in log:
+            if log["wirte_error"] == last_error:
+                last_error_count += 1
+            else:
+                if last_error_count > 0:
+                    print("+", last_error_count)
+                    last_error_count = 0
+                print(f"Write ERROR at request {index}", log["write_error"])
+                last_error = log["write_error"]
+
+
+
     if last_error_count > 0:
         print("+", last_error_count)
 
