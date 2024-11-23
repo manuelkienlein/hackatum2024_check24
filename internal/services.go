@@ -9,15 +9,6 @@ import (
 	"strconv"
 )
 
-// InitDB Initialize and return the database connection pool
-func InitDB() *pgxpool.Pool {
-	dbPool, err := pgxpool.Connect(context.Background(), "postgres://postgres:pg#pass123@localhost:5432/template1")
-	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
-	}
-	return dbPool
-}
-
 // FilterOffers Filter offers based on various parameters
 func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 	// Parse and validate query parameters
