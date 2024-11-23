@@ -3,7 +3,7 @@ import sys
 import json
 
 from collections import Counter
-from utils import count_agr_actions
+from utils import count_agr_actions, compare_nested_structures
 input_file = ""
 
 
@@ -30,8 +30,25 @@ def main():
                 if last_error_count > 0: 
                     print("+", last_error_count)
                     last_error_count = 0
-                print(f"ERROR at request {index}", log["search_error"])
+                print(f"Search ERROR at request {index}", log["search_error"])
                 last_error = log["search_error"]
+        if "write_error" in log:
+            if log["write_error"] == last_error:
+                last_error_count += 1
+            else:
+                if last_error_count > 0:
+                    print("+", last_error_count)
+                    last_error_count = 0
+                print(f"Write ERROR at request {index}", log["write_error"])
+                last_error = log["write_error"]
+        
+        if "expected_result" in log and "actual_result" in log:
+            print(f"################### DIFFS for num {index} BEGIN ###################")
+            compare_nested_structures(log["expected_result"], log["actual_result"])
+            print(f"################### DIFF for num {index} END ###################")
+
+
+
     if last_error_count > 0:
         print("+", last_error_count)
 

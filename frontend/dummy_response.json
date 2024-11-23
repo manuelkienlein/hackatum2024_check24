@@ -1,0 +1,38 @@
+{
+    "offers": [
+      {
+        "ID": "01934a57-7988-7879-bb9b-e03bd4e77b9d",
+        "data": "string"
+      }
+    ],
+    "priceRanges": [
+      {
+        "start": 10000,
+        "end": 15000,
+        "count": 4
+      }
+    ],
+    "carTypeCounts": {
+      "small": 1,
+      "sports": 2,
+      "luxury": 1,
+      "family": 0
+    },
+    "seatsCount": [
+      {
+        "numberSeats": 5,
+        "count": 4
+      }
+    ],
+    "freeKilometerRange": [
+      {
+        "start": 100,
+        "end": 150,
+        "count": 4
+      }
+    ],
+    "vollkaskoCount": {
+      "trueCount": 3,
+      "falseCount": 1
+    }
+  }
