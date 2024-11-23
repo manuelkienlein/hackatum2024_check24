@@ -197,6 +197,7 @@ func CreateOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 
 	// Parse the request body
 	if err := c.BodyParser(&request); err != nil {
+		log.Printf("Unable to parse JSON: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot parse JSON"})
 	}
 

@@ -1,7 +1,7 @@
 -- Create offers table
 CREATE TABLE offers (
     id UUID PRIMARY KEY, -- Unique identifier for each offer
-    data VARCHAR(256) NOT NULL, -- additional data of the offer
+    data VARCHAR(500) NOT NULL, -- additional data of the offer
     most_specific_region_id INTEGER NOT NULL, -- Region ID
     start_date BIGINT NOT NULL, -- Start time of the range (ms since UNIX epoch)
     end_date BIGINT NOT NULL, -- End time of the range (ms since UNIX epoch)
