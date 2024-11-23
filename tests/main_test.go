@@ -149,6 +149,18 @@ func TestPostOffers(t *testing.T) {
 				"carType": "luxury",
 				"hasVollkasko": true,
 				"freeKilometers": 120
+			},
+			{
+				"ID": "01934a57-7988-7879-bb9b-e03bd4e77b9a",
+				"data": "string",
+				"mostSpecificRegionID": 4,
+				"startDate": 1732104000000,
+				"endDate": 1732449600000,
+				"numberSeats": 5,
+				"price": 10000,
+				"carType": "luxuryy",
+				"hasVollkasko": true,
+				"freeKilometers": 120
 			}
 		]
 	}`
