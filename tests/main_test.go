@@ -11,7 +11,7 @@ import (
 	"net/http/httptest"
 	"server/internal/controller"
 	"server/internal/database"
-	"server/internal/init"
+	"server/internal/framework"
 	"server/internal/repository"
 	"server/internal/service"
 	"testing"
@@ -46,7 +46,7 @@ func setupApp() *fiber.App {
 	offerService := service.NewOfferService(offerRepo)
 	offerController := controller.NewOfferController(offerService)
 
-	init.RegisterRoutes(app, offerController)
+	framework.RegisterRoutes(app, offerController)
 
 	return app
 }

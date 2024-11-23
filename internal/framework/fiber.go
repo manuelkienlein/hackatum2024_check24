@@ -1,4 +1,4 @@
-package init
+package framework
 
 import (
 	"github.com/gofiber/contrib/swagger"

@@ -8,7 +8,7 @@ import (
 	"log"
 	"server/internal/controller"
 	"server/internal/database"
-	"server/internal/init"
+	"server/internal/framework"
 	"server/internal/repository"
 	"server/internal/service"
 )
@@ -57,10 +57,10 @@ func main() {
 	}))
 
 	// Register new routes
-	init.RegisterRoutes(app, offerController)
+	framework.RegisterRoutes(app, offerController)
 
 	// Add swagger
-	init.RegisterSwagger(app)
+	framework.RegisterSwagger(app)
 
 	// Start server
 	err = app.Listen(":80")
