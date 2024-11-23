@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"server/internal"
@@ -24,9 +25,18 @@ func setupApp() *fiber.App {
 
 	dbPool, err := database.ConnectDB(ctx)
 	if err != nil {
-		//log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer dbPool.Close()
+
+	// clean up databases
+	err = database.DropTables(ctx, dbPool)
+	if err != nil {
+		log.Fatalf("Failed to drop tables: %v", err)
+	}
+	err = database.Migrate(ctx, dbPool)
+	if err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
 
 	internal.RegisterRoutes(app, dbPool)
 
