@@ -69,15 +69,28 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 
 	// Build SQL query dynamically
 	query := `
-		SELECT id, data, price, car_type, number_seats, free_kilometers, only_vollkasko
-		FROM offers
-		WHERE most_specific_region_id = $1
-			AND start_date >= $2
-			AND end_date <= $3
-			AND end_date - start_date = $4
-			AND price >= $5
-			AND price < $6
-			AND free_kilometers >= $7
+		WITH RECURSIVE ParentRegions AS (
+			-- Base case
+			SELECT id, parent_id
+			FROM static_region_data
+			WHERE id = $1
+		
+			UNION ALL
+		
+			-- Recursive case: Find parents of the current regions
+			SELECT sr.id, sr.parent_id
+			FROM static_region_data sr
+			INNER JOIN ParentRegions pr ON sr.id = pr.parent_id
+		)
+		SELECT o.*
+		FROM offers o
+		JOIN ParentRegions pr ON o.most_specific_region_id = pr.id
+		WHERE o.start_date >= $2
+			AND o.end_date <= $3
+			AND o.end_date - start_date = $4
+			AND o.price >= $5
+			AND o.price < $6
+			AND o.free_kilometers >= $7
 	`
 	args := []interface{}{regionID, timeRangeStart, timeRangeEnd, numberDays, minPrice, maxPrice, minFreeKilometer}
 	argIdx := len(args)
@@ -85,23 +98,25 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 	// Add dynamic filters
 	if minNumberSeats > 0 {
 		argIdx++
-		query += ` AND number_seats >= $` + strconv.Itoa(argIdx)
+		query += ` AND o.number_seats >= $` + strconv.Itoa(argIdx)
 		args = append(args, minNumberSeats)
 	}
 	if carType != "" {
 		argIdx++
-		query += ` AND car_type = $` + strconv.Itoa(argIdx)
+		query += ` AND o.car_type = $` + strconv.Itoa(argIdx)
 		args = append(args, carType)
 	}
 	if onlyVollkasko {
 		argIdx++
-		query += ` AND only_vollkasko = $` + strconv.Itoa(argIdx)
+		query += ` AND o.only_vollkasko = $` + strconv.Itoa(argIdx)
 		args = append(args, onlyVollkasko)
 	}
 
 	// Add sorting and pagination
-	query += ` ORDER BY price ` + sortOrder[6:] + `, id LIMIT $` + strconv.Itoa(argIdx+1) + ` OFFSET $` + strconv.Itoa(argIdx+2)
+	query += ` ORDER BY o.price ` + sortOrder[6:] + `, id LIMIT $` + strconv.Itoa(argIdx+1) + ` OFFSET $` + strconv.Itoa(argIdx+2)
 	args = append(args, pageSize, (page-1)*pageSize)
+
+	log.Printf("Query: %v\n", query)
 
 	// Execute the query
 	rows, err := dbPool.Query(context.Background(), query, args...)
