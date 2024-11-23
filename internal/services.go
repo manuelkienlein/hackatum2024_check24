@@ -7,17 +7,6 @@ import (
 	"log"
 )
 
-func InitDB() *pgxpool.Pool {
-	var err error
-	var dbPool *pgxpool.Pool
-	dbPool, err = pgxpool.Connect(context.Background(), "postgres://postgres:pg#pass123@localhost:5432/template1")
-	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
-	}
-
-	return dbPool
-}
-
 func FilterOffers(c *fiber.Ctx, regionID int, timeRangeStart int, timeRangeEnd int, numberDays int, sortOrder string, page int, pageSize int, priceRangeWidth int, minFreeKilometerWidth int, minNumberSeats int, minPrice int, maxPrice int, carType string, onlyVollkasko bool, minFreeKilometer int) error {
 	// Placeholder data for response
 	// TODO
