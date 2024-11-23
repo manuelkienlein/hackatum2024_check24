@@ -5,9 +5,13 @@ import (
 	"flag"
 	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"log"
 	"server/internal"
+	"server/internal/controller"
 	"server/internal/database"
+	"server/internal/repository"
+	"server/internal/service"
 )
 
 func main() {
@@ -40,11 +44,25 @@ func main() {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
+	offerRepo := repository.NewOfferRepository(dbPool)
+	offerService := service.NewOfferService(offerRepo)
+	offerController := controller.NewOfferController(offerService)
+
 	log.Println("Starting webserver...")
 	app := fiber.New()
 
-	// Register routes
+	// Add logger
+	app.Use(logger.New(logger.Config{
+		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${url} | ${error}\n",
+	}))
+
+	// Register routes (DEPRECATED)
 	internal.RegisterRoutes(app, dbPool)
+
+	// Register new routes
+	app.Delete("/api/offers", offerController.DeleteOffersHandler)
+	app.Post("/api/offers", offerController.CreateOffersHandler)
+	app.Get("/api/offers", offerController.GetOffersHandler)
 
 	// Add swagger
 	cfg := swagger.Config{
