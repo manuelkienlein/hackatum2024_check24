@@ -1,9 +1,9 @@
 import streamlit as st
 import json
 import time
-import collections
 import datetime
-import requests
+from dummy import get_dummy_response
+from utils import render_offer, render_all_offers
 
 ENDPOINT_URL = "http://localhost:80/api/offers"
 
@@ -20,11 +20,22 @@ if "region_num_dict" not in st.session_state:
         d = json.load(file)
     st.session_state["region_num_dict"] = d
 
+if "num_region_dict" not in st.session_state:
+    with open("num_region_dict.json", "r", encoding="utf-8") as file:
+        print("Read regions")
+        d = json.load(file)
+    st.session_state["num_region_dict"] = d
+
+
+
 if "current_page_index" not in st.session_state:
     st.session_state["current_page_index"] = 0
 
 if "page_size" not in st.session_state:
     st.session_state["page_size"] = 20    
+
+if "offers" not in st.session_state:
+    st.session_state["offers"] = []
 
 min_seat_num = 1
 only_vollkasko = 0
@@ -32,6 +43,9 @@ min_price = 0
 max_price = 0
 car_type = None
 min_free_km = 0
+refresh_button = False
+prev = False
+next = False
 
 st.header("Go Api Go - The Best Rental Car Service", divider="red")
 
@@ -45,7 +59,7 @@ if st.session_state["current_state"] == 0:
     st.write(" ")
     st.write(" ")
     st.write(" ")
-c1, c2,c3,c4, c5, c6, c7, c8 = st.columns([1,0.6,0.5,0.6,0.5,0.4,0.8,0.5])
+c1, c2,c3,c4, c5, c6, c7, c8 = st.columns([1,0.6,0.5,0.6,0.5,0.4,0.8,0.5], vertical_alignment="bottom")
 with c1:
     region_options = st.session_state["region_num_dict"].keys()
     region_options = sorted(region_options)
@@ -85,8 +99,8 @@ with c8:
 
 # Show Big Menu
 if st.session_state["current_state"] == 1:
-    c1, c2 = st.columns([1,6])
-    with c1:
+    c1, c2 = st.columns([0.001,6])
+    with st.sidebar:
         st.write(" ")
 
         st.write("**Filter Options**")
@@ -100,20 +114,42 @@ if st.session_state["current_state"] == 1:
         car_type = st.selectbox("Car Type", options=["small", "sports", "luxury", "family"],index=None, placeholder="Choose type of car")
 
         min_free_km = st.number_input("Min. free Kilometers", min_value=0, step=50, value=0)
+
+        refresh_button = st.button("Refresh", type="primary", use_container_width=True)
     
+    # ALL THE OFFERS
+    with c2:
+        
+        render_all_offers(st.session_state["offers"], st.session_state["page_size"])
 # Choose Page 
     st.write(" ")
-    _, c2, c3 = st.columns([2,1,4])
+    _, c1, c2, c3,c4,c5,_ = st.columns([1.1,1, 0.75,0.75,0.8,0.75,1.7], vertical_alignment="center")
+    with c1:
+        st.write("Ergebnisse pro Seite: ")
     with c2:
-        page_size = st.selectbox("Num. Results per Page", options=[20,50,100], index=0)
+        page_size = st.selectbox("Num. Results per Page", options=[20,50,100], index=0, label_visibility="collapsed")
         if not page_size == st.session_state["page_size"]:
             st.session_state["page_size"] = page_size
     with c3:
+        prev = st.button("Previous",use_container_width=True, disabled=(st.session_state["current_page_index"] == 0))
+
+    with c4:
+        current_page = st.session_state["current_page_index"]
+        st.write(f"**Current Page: {current_page}**")
+    with c5:
         current_page = st.session_state["current_page_index"] + 1
-        st.pills("Pages",[f"Current Page ({current_page})","Next Page"])
+        next = st.button("Next", use_container_width=True)
+
 
 
 ## BACKEND ##################
+def wait_for_response():
+    c1, c2, c3 = st.columns([3,1,3])
+    with c2:
+        with st.spinner():
+            response = get_dummy_response()
+            return response
+
 
 def perform_search():
     page_index = st.session_state["current_page_index"]
@@ -165,6 +201,8 @@ def perform_search():
     print("Send Data", send_data)
 
     # response = requests.post(ENDPOINT_URL, data={})
+    response = wait_for_response()
+    st.session_state["offers"] = response
     
 if search_button:
 
@@ -174,6 +212,23 @@ if search_button:
         st.rerun()
     else:
         perform_search()
+        st.rerun()
+
+if refresh_button:
+    perform_search()
+    st.rerun()
+
+if prev:
+    st.session_state["current_page_index"] -= 1
+    perform_search()
+    st.rerun()
+
+if next:
+    st.session_state["current_page_index"] += 1
+    perform_search()
+    st.rerun()
+
+
 
 
 

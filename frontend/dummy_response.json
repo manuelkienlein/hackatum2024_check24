@@ -1,38 +1,21 @@
-{
-    "offers": [
-      {
-        "ID": "01934a57-7988-7879-bb9b-e03bd4e77b9d",
-        "data": "string"
-      }
-    ],
-    "priceRanges": [
-      {
-        "start": 10000,
-        "end": 15000,
-        "count": 4
-      }
-    ],
-    "carTypeCounts": {
-      "small": 1,
-      "sports": 2,
-      "luxury": 1,
-      "family": 0
-    },
-    "seatsCount": [
-      {
-        "numberSeats": 5,
-        "count": 4
-      }
-    ],
-    "freeKilometerRange": [
-      {
-        "start": 100,
-        "end": 150,
-        "count": 4
-      }
-    ],
-    "vollkaskoCount": {
-      "trueCount": 3,
-      "falseCount": 1
-    }
-  }
+{"Offers":[
+  {"OfferID":"97b2bb53-6565-4391-9f68-2dc4a682dba0","IsDataCorrect":true},
+  {"OfferID":"4e55b4b0-0764-4ea0-b0ad-6dee990266c7","IsDataCorrect":true},
+  {"OfferID":"a920bce8-dff3-4e6b-8ff7-d6855b0c2c47","IsDataCorrect":true},
+  {"OfferID":"2b3de1b4-7155-4d5f-b51b-9495547ecc37","IsDataCorrect":true}
+  ],
+  "CarTypeCounts":{"family":0,"luxury":1,"small":2,"sports":1},
+  "FreeKilometerRanges":[
+    {"Start":500,"End":550,"Count":1},
+    {"Start":600,"End":650,"Count":1},
+    {"Start":700,"End":750,"Count":1},
+    {"Start":900,"End":950,"Count":1}
+  ],
+  "PriceRanges":[
+    {"Start":2000,"End":2010,"Count":1},
+    {"Start":3110,"End":3120,"Count":1},
+    {"Start":3230,"End":3240,"Count":1},
+    {"Start":4420,"End":4430,"Count":1}
+  ],
+  "SeatsCounts":{"2":1,"4":1,"5":1,"6":1},
+  "VollkaskoCount":{"TrueCount":2,"FalseCount":2}}
