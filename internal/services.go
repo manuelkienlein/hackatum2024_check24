@@ -217,7 +217,7 @@ func DeleteOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 	// Directly use the connection pool for lightweight operations
 	_, err := dbPool.Exec(context.Background(), `
         DELETE FROM offers
-        WHERE region_id NOT IN (SELECT region_id FROM static_region_data)
+        WHERE most_specific_region_id NOT IN (SELECT id FROM static_region_data)
     `)
 	if err != nil {
 		log.Printf("Unable to delete old offers: %v\n", err)
