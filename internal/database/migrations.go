@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -19,39 +19,17 @@ type Region struct {
 
 // Migrate creates the tables and fills the static_region_data table
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
-	// Create offers table
-	query := `
-	CREATE TABLE offers (
-    id SERIAL PRIMARY KEY, -- Unique identifier for each offer
-    data VARCHAR(256) NOT NULL, -- additional data of the offer
-    most_specific_region_id INTEGER NOT NULL, -- Region ID
-    start_date BIGINT NOT NULL, -- Start time of the range (ms since UNIX epoch)
-    end_date BIGINT NOT NULL, -- End time of the range (ms since UNIX epoch)
-    number_Seats INTEGER NOT NULL, -- Number of seats in the car
-    price INTEGER NOT NULL, -- Price in cents
-    number_days INTEGER NOT NULL, -- Number of full days available
-    car_type VARCHAR(20), -- Type of the car
-    only_vollkasko BOOLEAN NOT NULL, -- Whether only offers with vollkasko are included
-    free_kilometers INTEGER -- free kilometers included
-	);`
 
-	_, err := pool.Exec(ctx, query)
+	// Load SQL migrations from file
+	migrationSQL, err := os.ReadFile("internal/database/migrations.sql")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read migrations.sql: %v", err)
 	}
 
-	// Create static_region_data table with parent_id
-	query = `
-	CREATE TABLE IF NOT EXISTS static_region_data (
-		id INT PRIMARY KEY,
-		name VARCHAR(255) NOT NULL,
-		parent_id INT,
-		FOREIGN KEY (parent_id) REFERENCES static_region_data(id)
-	)`
-
-	_, err = pool.Exec(ctx, query)
+	// Execute the migration script
+	_, err = pool.Exec(ctx, string(migrationSQL))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to execute migrations: %v", err)
 	}
 
 	// Read and parse regions.json
@@ -66,7 +44,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		}
 	}(file)
 
-	byteValue, err := ioutil.ReadAll(file)
+	byteValue, err := io.ReadAll(file)
 	if err != nil {
 		return fmt.Errorf("failed to read regions.json: %v", err)
 	}
@@ -100,16 +78,19 @@ func insertRegion(ctx context.Context, pool *pgxpool.Pool, region Region, parent
 	return nil
 }
 
-// DropTables drops the offers and static_region_data tables/fix
 func DropTables(ctx context.Context, pool *pgxpool.Pool) error {
-	_, err := pool.Exec(ctx, "DROP TABLE IF EXISTS offers")
-	if err != nil {
-		return err
+	// List of tables to be dropped
+	tables := []string{
+		"offers",
+		"static_region_data",
 	}
 
-	_, err = pool.Exec(ctx, "DROP TABLE IF EXISTS static_region_data")
-	if err != nil {
-		return err
+	// Loop through each table and drop it
+	for _, table := range tables {
+		_, err := pool.Exec(ctx, "DROP TABLE IF EXISTS "+table)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
