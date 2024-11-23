@@ -112,42 +112,32 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 	defer rows.Close()
 
 	// Process query results
-	offers := make([]ResponseOffer, 0, pageSize)
+	offers := make([]map[string]string, 0, pageSize)
 	priceRangeCounts := make(map[string]int)
-	carTypeCounts := CarTypeCounts{}
+	carTypeCounts := map[string]int{"small": 0, "sports": 0, "luxury": 0, "family": 0}
 	seatsCount := make(map[int]int)
 	freeKilometerCounts := make(map[string]int)
-	vollkaskoCount := VollkaskoCount{}
+	vollkaskoCount := map[string]int{"trueCount": 0, "falseCount": 0}
 
 	for rows.Next() {
-		var offer ResponseOffer
+		var id, data, carType string
 		var price, numberSeats, freeKilometers int
-		var carType string
 		var onlyVollkasko bool
 
-		if err := rows.Scan(&offer.ID, &offer.Data, &price, &carType, &numberSeats, &freeKilometers, &onlyVollkasko); err != nil {
+		if err := rows.Scan(&id, &data, &price, &carType, &numberSeats, &freeKilometers, &onlyVollkasko); err != nil {
 			log.Printf("Row scan failed: %v\n", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to process offers"})
 		}
 
 		// Add offer to list
-		offers = append(offers, offer)
+		offers = append(offers, map[string]string{"ID": id, "data": data})
 
 		// Aggregate price ranges
 		priceRangeKey := fmt.Sprintf("%d-%d", (price/priceRangeWidth)*priceRangeWidth, ((price/priceRangeWidth)+1)*priceRangeWidth)
 		priceRangeCounts[priceRangeKey]++
 
 		// Aggregate car type counts
-		switch carType {
-		case "small":
-			carTypeCounts.Small++
-		case "sports":
-			carTypeCounts.Sports++
-		case "luxury":
-			carTypeCounts.Luxury++
-		case "family":
-			carTypeCounts.Family++
-		}
+		carTypeCounts[carType]++
 
 		// Aggregate seats count
 		seatsCount[numberSeats]++
@@ -158,36 +148,36 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 
 		// Aggregate vollkasko count
 		if onlyVollkasko {
-			vollkaskoCount.TrueCount++
+			vollkaskoCount["trueCount"]++
 		} else {
-			vollkaskoCount.FalseCount++
+			vollkaskoCount["falseCount"]++
 		}
 	}
 
 	// Transform aggregated data into required format
-	priceRanges := make([]PriceRange, 0, len(priceRangeCounts))
+	priceRanges := make([]map[string]int, 0, len(priceRangeCounts))
 	for key, count := range priceRangeCounts {
 		var start, end int
 		_, err := fmt.Sscanf(key, "%d-%d", &start, &end)
 		if err != nil {
 			return err
 		}
-		priceRanges = append(priceRanges, PriceRange{Start: start, End: end, Count: count})
+		priceRanges = append(priceRanges, map[string]int{"start": start, "end": end, "count": count})
 	}
 
-	seatsCounts := make([]SeatsCount, 0, len(seatsCount))
+	seatsCounts := make([]map[string]int, 0, len(seatsCount))
 	for seats, count := range seatsCount {
-		seatsCounts = append(seatsCounts, SeatsCount{NumberSeats: seats, Count: count})
+		seatsCounts = append(seatsCounts, map[string]int{"numberSeats": seats, "count": count})
 	}
 
-	freeKilometerRanges := make([]FreeKilometerRange, 0, len(freeKilometerCounts))
+	freeKilometerRanges := make([]map[string]int, 0, len(freeKilometerCounts))
 	for key, count := range freeKilometerCounts {
 		var start, end int
 		_, err := fmt.Sscanf(key, "%d-%d", &start, &end)
 		if err != nil {
 			return err
 		}
-		freeKilometerRanges = append(freeKilometerRanges, FreeKilometerRange{Start: start, End: end, Count: count})
+		freeKilometerRanges = append(freeKilometerRanges, map[string]int{"start": start, "end": end, "count": count})
 	}
 
 	// Return the response
