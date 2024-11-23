@@ -45,7 +45,9 @@ func main() {
 	app := fiber.New()
 
 	// Add logger
-	app.Use(logger.New())
+	app.Use(logger.New(logger.Config{
+		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${url} | ${error}\\n",
+	}))
 
 	// Register routes
 	internal.RegisterRoutes(app, dbPool)
