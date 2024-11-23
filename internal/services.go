@@ -41,7 +41,7 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid sortOrder"})
 	}
 	page, err := strconv.Atoi(c.Query("page"))
-	if err != nil || page < 1 {
+	if err != nil || page < 0 {
 		log.Printf("Invalid page: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid page"})
 	}
