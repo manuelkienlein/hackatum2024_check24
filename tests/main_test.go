@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
@@ -14,6 +16,7 @@ import (
 	"server/internal/framework"
 	"server/internal/repository"
 	"server/internal/service"
+	"sync"
 	"testing"
 )
 
@@ -159,4 +162,128 @@ func TestPostOffers(t *testing.T) {
 
 	// Überprüfen, ob der Statuscode = 200 ist
 	assert.Equal(t, resp.StatusCode, 200)
+}
+
+func TestPostPerf(t *testing.T) {
+	// Setup der App
+	app := setupApp()
+
+	numOffers := 1000
+
+	// Erzeuge die JSON-Daten für die POST-Anfrage
+	offers := []byte(`{"offers": [`)
+
+	for i := 0; i < numOffers; i++ {
+		// Erzeuge eine zufällige UUID für jedes Angebot
+		id := uuid.New().String()
+
+		// Baue das Angebot mit der zufälligen UUID
+		offer := fmt.Sprintf(`
+		{
+			"ID": "%s",
+			"data": "string",
+			"mostSpecificRegionID": 5,
+			"startDate": 1732104000000,
+			"endDate": 1732449600000,
+			"numberSeats": 5,
+			"price": 10000,
+			"carType": "luxury",
+			"hasVollkasko": true,
+			"freeKilometers": 120
+		}`, id)
+
+		// Füge das Angebot zur JSON-Datenstruktur hinzu
+		if i > 0 {
+			offers = append(offers, []byte(",")...)
+		}
+		offers = append(offers, []byte(offer)...)
+	}
+
+	// Beende das Array und das JSON-Objekt
+	offers = append(offers, []byte(`]}`)...)
+
+	// Führe eine POST-Anfrage an /api/offers durch
+	req := httptest.NewRequest("POST", "/api/offers", bytes.NewReader(offers))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+
+	// Überprüfen, ob keine Fehler beim Testen aufgetreten sind
+	assert.NoError(t, err)
+
+	// Überprüfen, ob der Statuscode = 200 ist
+	assert.Equal(t, resp.StatusCode, 200)
+}
+
+func TestPostPerfConcurrency(t *testing.T) {
+	// Setup der App
+	app := setupApp()
+
+	// Anzahl der zu generierenden Angebote
+	numOffersPerBatch := 1000
+
+	// Anzahl der parallelen Anfragen
+	concurrency := 32
+
+	// Anzahl der Batches
+	numBatches := 100
+
+	// Warteschleife für parallele Tests
+	var wg sync.WaitGroup
+
+	// Führe parallele Tests aus
+	for n := 0; n < numBatches; n++ {
+
+		for i := 0; i < concurrency; i++ {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+
+				// Erzeuge die JSON-Daten für die POST-Anfrage
+				offers := []byte(`{"offers": [`)
+
+				for j := 0; j < numOffersPerBatch/concurrency; j++ {
+					// Erzeuge eine zufällige UUID für jedes Angebot
+					id := uuid.New().String()
+
+					// Baue das Angebot mit der zufälligen UUID
+					offer := fmt.Sprintf(`
+				{
+					"ID": "%s",
+					"data": "string",
+					"mostSpecificRegionID": 5,
+					"startDate": 1732104000000,
+					"endDate": 1732449600000,
+					"numberSeats": 5,
+					"price": 10000,
+					"carType": "luxury",
+					"hasVollkasko": true,
+					"freeKilometers": 120
+				}`, id)
+
+					// Füge das Angebot zur JSON-Datenstruktur hinzu
+					if j > 0 {
+						offers = append(offers, []byte(",")...)
+					}
+					offers = append(offers, []byte(offer)...)
+				}
+
+				// Beende das Array und das JSON-Objekt
+				offers = append(offers, []byte(`]}`)...)
+
+				// Führe eine POST-Anfrage an /api/offers durch
+				req := httptest.NewRequest("POST", "/api/offers", bytes.NewReader(offers))
+				req.Header.Set("Content-Type", "application/json")
+				resp, err := app.Test(req)
+
+				// Überprüfen, ob keine Fehler beim Testen aufgetreten sind
+				assert.NoError(t, err)
+
+				// Überprüfen, ob der Statuscode = 200 ist
+				assert.Equal(t, resp.StatusCode, 200)
+			}(i)
+		}
+
+		// Warten, bis alle Goroutinen abgeschlossen sind
+		wg.Wait()
+	}
 }
