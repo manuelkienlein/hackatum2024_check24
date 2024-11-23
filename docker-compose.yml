@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pg#pass123
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: pg#pass123
+    ports:
+      - "8081:80"
+
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: go_app
+#    restart: always
+#    depends_on:
+#      - postgres
+#    environment:
+#      DATABASE_URL: "postgres://postgres:pg%23pass123@postgres:5432/template1?sslmode=disable"
+#    ports:
+#      - "3000:3000"
+
+volumes:
+  postgres_data:
