@@ -1,17 +1,17 @@
 package internal
 
-// here are the models for insertion in the database
+// Offer here are the models for insertion in the database
 type Offer struct {
+	ID                   string `json:"ID"`
 	Data                 string `json:"data"`
-	MostSpecificRegionID int    `json:"most_specific_region_id"`
-	StartDate            int64  `json:"start_date"`
-	EndDate              int64  `json:"end_date"`
-	NumberSeats          int    `json:"number_seats"`
+	MostSpecificRegionID int    `json:"mostSpecificRegionID"`
+	StartDate            int64  `json:"startDate"`
+	EndDate              int64  `json:"endDate"`
+	NumberSeats          int    `json:"numberSeats"`
 	Price                int    `json:"price"`
-	NumberDays           int    `json:"number_days"`
-	CarType              string `json:"car_type"`
-	OnlyVollkasko        bool   `json:"only_vollkasko"`
-	FreeKilometers       int    `json:"free_kilometers"`
+	CarType              string `json:"carType"`
+	OnlyVollkasko        bool   `json:"hasVollkasko"`
+	FreeKilometers       int    `json:"freeKilometers"`
 }
 
 // here are the models for the response

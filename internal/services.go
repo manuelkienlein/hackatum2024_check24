@@ -191,25 +191,29 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 
 // CreateOffers Create a new offer and insert it into the database
 func CreateOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
-	var offer Offer
+	var request struct {
+		Offers []Offer `json:"offers"`
+	}
 
 	// Parse the request body
-	if err := c.BodyParser(&offer); err != nil {
+	if err := c.BodyParser(&request); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot parse JSON"})
 	}
 
 	// Use a single query with connection pooling
-	_, err := dbPool.Exec(context.Background(), `
-		INSERT INTO offers (data, most_specific_region_id, start_date, end_date, number_seats, price, number_days, car_type, only_vollkasko, free_kilometers)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-		offer.Data, offer.MostSpecificRegionID, offer.StartDate, offer.EndDate, offer.NumberSeats, offer.Price, offer.NumberDays, offer.CarType, offer.OnlyVollkasko, offer.FreeKilometers,
-	)
-	if err != nil {
-		log.Printf("Unable to execute statement: %v\n", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot execute statement"})
+	for _, offer := range request.Offers {
+		_, err := dbPool.Exec(context.Background(), `
+			INSERT INTO offers (id, data, most_specific_region_id, start_date, end_date, number_seats, price, car_type, only_vollkasko, free_kilometers)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+			offer.ID, offer.Data, offer.MostSpecificRegionID, offer.StartDate, offer.EndDate, offer.NumberSeats, offer.Price, offer.CarType, offer.OnlyVollkasko, offer.FreeKilometers,
+		)
+		if err != nil {
+			log.Printf("Unable to execute statement: %v\n", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot execute statement"})
+		}
 	}
 
-	return c.Status(fiber.StatusOK).SendString("Offer was created successfully")
+	return c.Status(fiber.StatusOK).SendString("Offers were created successfully")
 }
 
 // DeleteOffers Delete outdated offers from the database
