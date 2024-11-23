@@ -193,7 +193,9 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 
 // CreateOffers Create a new offer and insert it into the database
 func CreateOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
-	log.Println(c.Body())
+	// print out the request body
+	log.Println(string(c.Body()))
+
 	var request struct {
 		Offers []Offer `json:"offers"`
 	}
