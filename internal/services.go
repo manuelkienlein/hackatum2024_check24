@@ -12,29 +12,41 @@ import (
 // FilterOffers Filter offers based on various parameters
 func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 	// Parse and validate query parameters
-	regionID, _ := strconv.Atoi(c.Query("regionID"))
-	timeRangeStart, _ := strconv.Atoi(c.Query("timeRangeStart"))
-	timeRangeEnd, _ := strconv.Atoi(c.Query("timeRangeEnd"))
-	numberDays, _ := strconv.Atoi(c.Query("numberDays"))
+	regionID, err := strconv.Atoi(c.Query("regionID"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid regionID"})
+	}
+	timeRangeStart, err := strconv.Atoi(c.Query("timeRangeStart"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid timeRangeStart"})
+	}
+	timeRangeEnd, err := strconv.Atoi(c.Query("timeRangeEnd"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid timeRangeEnd"})
+	}
+	numberDays, err := strconv.Atoi(c.Query("numberDays"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid numberDays"})
+	}
 	sortOrder := c.Query("sortOrder")
-	if sortOrder != "asc" && sortOrder != "desc" {
-		sortOrder = "asc" // Default to ascending order
+	if sortOrder != "price-asc" && sortOrder != "price-desc" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid sortOrder"})
 	}
-	page, _ := strconv.Atoi(c.Query("page"))
-	if page < 1 {
-		page = 1
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page < 1 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid page"})
 	}
-	pageSize, _ := strconv.Atoi(c.Query("pageSize"))
-	if pageSize < 1 {
-		pageSize = 10
+	pageSize, err := strconv.Atoi(c.Query("pageSize"))
+	if err != nil || pageSize < 1 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid pageSize"})
 	}
-	priceRangeWidth, _ := strconv.Atoi(c.Query("priceRangeWidth"))
-	if priceRangeWidth < 1 {
-		priceRangeWidth = 100 // Default width
+	priceRangeWidth, err := strconv.Atoi(c.Query("priceRangeWidth"))
+	if err != nil || priceRangeWidth < 1 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid priceRangeWidth"})
 	}
-	minFreeKilometerWidth, _ := strconv.Atoi(c.Query("minFreeKilometerWidth"))
-	if minFreeKilometerWidth < 1 {
-		minFreeKilometerWidth = 50 // Default width
+	minFreeKilometerWidth, err := strconv.Atoi(c.Query("minFreeKilometerWidth"))
+	if err != nil || minFreeKilometerWidth < 1 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid minFreeKilometerWidth"})
 	}
 	minNumberSeats, _ := strconv.Atoi(c.Query("minNumberSeats"))
 	minPrice, _ := strconv.Atoi(c.Query("minPrice"))
@@ -45,15 +57,15 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 
 	// Build SQL query dynamically
 	query := `
-		SELECT id, data, price, car_type, number_seats, min_free_kilometer, only_vollkasko
+		SELECT id, data, price, car_type, number_seats, free_kilometers, only_vollkasko
 		FROM offers
-		WHERE region_id = $1
-		  AND time_range_start >= $2
-		  AND time_range_end <= $3
-		  AND number_days = $4
-		  AND price >= $5
-		  AND price < $6
-		  AND min_free_kilometer >= $7
+		WHERE most_specific_region_id = $1
+			AND start_date >= $2
+			AND end_date <= $3
+			AND number_days = $4
+			AND price >= $5
+			AND price < $6
+			AND free_kilometers >= $7
 	`
 	args := []interface{}{regionID, timeRangeStart, timeRangeEnd, numberDays, minPrice, maxPrice, minFreeKilometer}
 	argIdx := len(args)
@@ -76,7 +88,7 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 	}
 
 	// Add sorting and pagination
-	query += ` ORDER BY price ` + sortOrder + `, id LIMIT $` + strconv.Itoa(argIdx+1) + ` OFFSET $` + strconv.Itoa(argIdx+2)
+	query += ` ORDER BY price ` + sortOrder[6:] + `, id LIMIT $` + strconv.Itoa(argIdx+1) + ` OFFSET $` + strconv.Itoa(argIdx+2)
 	args = append(args, pageSize, (page-1)*pageSize)
 
 	// Execute the query
@@ -97,11 +109,11 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 
 	for rows.Next() {
 		var offer ResponseOffer
-		var price, numberSeats, minFreeKilometer int
+		var price, numberSeats, freeKilometers int
 		var carType string
 		var onlyVollkasko bool
 
-		if err := rows.Scan(&offer.ID, &offer.Data, &price, &carType, &numberSeats, &minFreeKilometer, &onlyVollkasko); err != nil {
+		if err := rows.Scan(&offer.ID, &offer.Data, &price, &carType, &numberSeats, &freeKilometers, &onlyVollkasko); err != nil {
 			log.Printf("Row scan failed: %v\n", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to process offers"})
 		}
@@ -129,7 +141,7 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 		seatsCount[numberSeats]++
 
 		// Aggregate free kilometer ranges
-		freeKilometerKey := fmt.Sprintf("%d-%d", (minFreeKilometer/minFreeKilometerWidth)*minFreeKilometerWidth, ((minFreeKilometer/minFreeKilometerWidth)+1)*minFreeKilometerWidth)
+		freeKilometerKey := fmt.Sprintf("%d-%d", (freeKilometers/minFreeKilometerWidth)*minFreeKilometerWidth, ((freeKilometers/minFreeKilometerWidth)+1)*minFreeKilometerWidth)
 		freeKilometerCounts[freeKilometerKey]++
 
 		// Aggregate vollkasko count
@@ -188,16 +200,16 @@ func CreateOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 
 	// Use a single query with connection pooling
 	_, err := dbPool.Exec(context.Background(), `
-        INSERT INTO offers (region_id, time_range_start, time_range_end, number_days, sort_order, page, page_size, price_range_width, min_free_kilometer_width, min_number_seats, min_price, max_price, car_type, only_vollkasko, min_free_kilometer)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-		offer.RegionID, offer.TimeRangeStart, offer.TimeRangeEnd, offer.NumberDays, offer.SortOrder, offer.Page, offer.PageSize, offer.PriceRangeWidth, offer.MinFreeKilometerWidth, offer.MinNumberSeats, offer.MinPrice, offer.MaxPrice, offer.CarType, offer.OnlyVollkasko, offer.MinFreeKilometer,
+		INSERT INTO offers (data, most_specific_region_id, start_date, end_date, number_seats, price, number_days, car_type, only_vollkasko, free_kilometers)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		offer.Data, offer.MostSpecificRegionID, offer.StartDate, offer.EndDate, offer.NumberSeats, offer.Price, offer.NumberDays, offer.CarType, offer.OnlyVollkasko, offer.FreeKilometers,
 	)
 	if err != nil {
 		log.Printf("Unable to execute statement: %v\n", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot execute statement"})
 	}
 
-	return c.Status(fiber.StatusOK).SendString("Offers were created successfully")
+	return c.Status(fiber.StatusOK).SendString("Offer was created successfully")
 }
 
 // DeleteOffers Delete outdated offers from the database
