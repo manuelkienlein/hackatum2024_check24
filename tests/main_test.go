@@ -130,7 +130,7 @@ func TestGetOffers2(t *testing.T) {
 
 	// Führe eine GET-Anfrage an /api/offers durch
 	// /api/offers?minFreeKilometerWidth=50&numberDays=4&page=0&pageSize=100&priceRangeWidth=10&regionID=0&sortOrder=price-asc&timeRangeEnd=1673568000000&timeRangeStart=1673222400000
-	req := httptest.NewRequest("GET", "/api/offers?minFreeKilometerWidth=50&numberDays=3&page=0&pageSize=100&priceRangeWidth=10&regionID=0&sortOrder=price-asc&timeRangeEnd=1592179200000&timeRangeStart=1591920000000", nil)
+	req := httptest.NewRequest("GET", "/api/offers?minFreeKilometerWidth=50&numberDays=1&page=0&pageSize=100&priceRangeWidth=10&regionID=37&sortOrder=price-asc&timeRangeEnd=1692179200000&timeRangeStart=1491920000000", nil)
 	resp, err := app.Test(req)
 
 	// Überprüfen, ob keine Fehler beim Testen aufgetreten sind

@@ -46,7 +46,7 @@ func (r *offerRepository) CreateOffers(ctx context.Context, offers []models.Offe
 func (r *offerRepository) DeleteOldOffers(ctx context.Context) error {
 	query := `
         DELETE FROM offers
-        WHERE end_date < extract(epoch from now());
+        WHERE end_date < extract(epoch from now())*1000;
     `
 	_, err := r.db.Exec(ctx, query)
 	if err != nil {
@@ -118,7 +118,7 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 	}
 
 	// Add sorting and pagination
-	query += ` ORDER BY o.price ` + params.SortOrder[6:] + `, id LIMIT $` + strconv.Itoa(argIdx+1) + ` OFFSET $` + strconv.Itoa(argIdx+2)
+	query += ` ORDER BY o.price, o.id ` + params.SortOrder[6:] + `, id LIMIT $` + strconv.Itoa(argIdx+1) + ` OFFSET $` + strconv.Itoa(argIdx+2)
 	args = append(args, params.PageSize, params.Page*params.PageSize)
 
 	//log.Printf("Query: %v\n", query)
