@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"github.com/gofiber/fiber/v2"
+	"log"
 	"server/internal/models"
 	"server/internal/repository"
 )
@@ -27,25 +30,103 @@ func (s *OfferService) CleanUpOldOffers(ctx context.Context) error {
 }
 
 // Get offers
-func (s *OfferService) GetOffers(ctx context.Context, params models.OfferFilterParams) (models.OfferQueryResponse, error) {
-	offers, err := s.offerRepository.GetOffers(ctx, params)
+func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) (models.OfferQueryResponse, error) {
+	rows, err := s.offerRepository.GetOffers(c, params)
+	defer rows.Close()
 	if err != nil {
 		return models.OfferQueryResponse{}, err
 	}
 
-	// Placeholder: Replace with actual database aggregation logic
-	priceRanges := []models.PriceRange{{Start: 10000, End: 15000, Count: 4}}
-	carTypeCounts := models.CarTypeCounts{Small: 1, Sports: 2, Luxury: 1, Family: 0}
-	seatsCount := []models.SeatsCount{{NumberSeats: 5, Count: 4}}
-	freeKilometerRange := []models.FreeKilometerRange{{Start: 100, End: 150, Count: 4}}
-	vollkaskoCount := models.VollkaskoCount{TrueCount: 3, FalseCount: 1}
+	// Process query results
+	offers := make([]models.ResponseOffer, 0, params.PageSize)
+	priceRangeCounts := make(map[string]int)
+	carTypeCounts := models.CarTypeCounts{Small: 0, Sports: 0, Luxury: 0, Family: 0}
+	seatsCount := make([]models.SeatsCount, 0)
+	freeKilometerCounts := make(map[string]int)
+	vollkaskoCount := models.VollkaskoCount{TrueCount: 0, FalseCount: 0}
 
+	for rows.Next() {
+		var id, data, carType string
+		var regionId, startDate, endDate, price, numberSeats, freeKilometers int
+		var onlyVollkasko bool
+
+		if err := rows.Scan(&id, &data, &regionId, &startDate, &endDate, &numberSeats, &price, &carType, &onlyVollkasko, &freeKilometers); err != nil {
+			log.Printf("Row scan failed: %v\n", err)
+			return models.OfferQueryResponse{}, err
+		}
+
+		// Add offer to list
+		offers = append(offers, models.ResponseOffer{ID: id, Data: data})
+
+		// Aggregate price ranges
+		priceRangeKey := fmt.Sprintf("%d-%d", (price/params.PriceRangeWidth)*params.PriceRangeWidth, ((price/params.PriceRangeWidth)+1)*params.PriceRangeWidth)
+		priceRangeCounts[priceRangeKey]++
+
+		// Aggregate car type counts
+		switch carType {
+		case "small":
+			carTypeCounts.Small++
+		case "sports":
+			carTypeCounts.Sports++
+		case "luxury":
+			carTypeCounts.Luxury++
+		case "family":
+			carTypeCounts.Family++
+		}
+
+		// Aggregate seats count
+		found := false
+		for i, sc := range seatsCount {
+			if sc.NumberSeats == numberSeats {
+				seatsCount[i].Count++
+				found = true
+				break
+			}
+		}
+		if !found {
+			seatsCount = append(seatsCount, models.SeatsCount{NumberSeats: numberSeats, Count: 1})
+		}
+
+		// Aggregate free kilometer ranges
+		freeKilometerKey := fmt.Sprintf("%d-%d", (freeKilometers/params.MinFreeKilometerWidth)*params.MinFreeKilometerWidth, ((freeKilometers/params.MinFreeKilometerWidth)+1)*params.MinFreeKilometerWidth)
+		freeKilometerCounts[freeKilometerKey]++
+
+		// Aggregate vollkasko count
+		if onlyVollkasko {
+			vollkaskoCount.TrueCount++
+		} else {
+			vollkaskoCount.FalseCount++
+		}
+	}
+
+	// Transform aggregated data into required format
+	priceRanges := make([]models.PriceRange, 0, len(priceRangeCounts))
+	for key, count := range priceRangeCounts {
+		var start, end int
+		_, err := fmt.Sscanf(key, "%d-%d", &start, &end)
+		if err != nil {
+			return models.OfferQueryResponse{}, err
+		}
+		priceRanges = append(priceRanges, models.PriceRange{Start: start, End: end, Count: count})
+	}
+
+	freeKilometerRanges := make([]models.FreeKilometerRange, 0, len(freeKilometerCounts))
+	for key, count := range freeKilometerCounts {
+		var start, end int
+		_, err := fmt.Sscanf(key, "%d-%d", &start, &end)
+		if err != nil {
+			return models.OfferQueryResponse{}, err
+		}
+		freeKilometerRanges = append(freeKilometerRanges, models.FreeKilometerRange{Start: start, End: end, Count: count})
+	}
+
+	// Return the response
 	return models.OfferQueryResponse{
 		Offers:             offers,
 		PriceRanges:        priceRanges,
 		CarTypeCounts:      carTypeCounts,
 		SeatsCount:         seatsCount,
-		FreeKilometerRange: freeKilometerRange,
+		FreeKilometerRange: freeKilometerRanges,
 		VollkaskoCount:     vollkaskoCount,
 	}, nil
 }

@@ -3,15 +3,18 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"server/internal/models"
+	"strconv"
 )
 
 type OfferRepository interface {
 	DeleteOldOffers(ctx context.Context) error
 	CreateOffers(ctx context.Context, offers []models.Offer) error
-	GetOffers(ctx context.Context, params models.OfferFilterParams) ([]models.ResponseOffer, error)
+	GetOffers(c *fiber.Ctx, params models.OfferFilterParams) (pgx.Rows, error)
 }
 
 type offerRepository struct {
@@ -52,25 +55,65 @@ func (r *offerRepository) DeleteOldOffers(ctx context.Context) error {
 	return nil
 }
 
-func (r *offerRepository) GetOffers(ctx context.Context, params models.OfferFilterParams) ([]models.ResponseOffer, error) {
-	query := buildSQLQuery(params)
+func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) (pgx.Rows, error) {
+	// Build SQL query dynamically
+	query := `
+		WITH RECURSIVE SubRegions AS (
+		-- Base case: Start with the given region ID
+		SELECT id, parent_id
+		FROM static_region_data
+		WHERE id = $1
 
-	rows, err := r.db.Query(ctx, query)
+			UNION ALL
+		
+			-- Recursive case: Find children of the current regions
+			SELECT sr.id, sr.parent_id
+			FROM static_region_data sr
+			INNER JOIN SubRegions sbr ON sr.parent_id = sbr.id
+		)
+		SELECT o.*
+		FROM offers o
+		JOIN SubRegions sr ON o.most_specific_region_id = sr.id
+		WHERE o.start_date >= $2
+				AND o.end_date <= $3
+				AND o.end_date - start_date = $4
+				AND o.price >= $5
+				AND o.price < $6
+				AND o.free_kilometers >= $7
+	`
+	args := []interface{}{params.RegionID, params.TimeRangeStart, params.TimeRangeEnd, params.NumberDays, params.MinPrice, params.MaxPrice, params.MinFreeKilometer}
+	argIdx := len(args)
+
+	// Add dynamic filters
+	if params.MinNumberSeats > 0 {
+		argIdx++
+		query += ` AND o.number_seats >= $` + strconv.Itoa(argIdx)
+		args = append(args, params.MinNumberSeats)
+	}
+	if params.CarType != "" {
+		argIdx++
+		query += ` AND o.car_type = $` + strconv.Itoa(argIdx)
+		args = append(args, params.CarType)
+	}
+	if params.OnlyVollkasko {
+		argIdx++
+		query += ` AND o.only_vollkasko = $` + strconv.Itoa(argIdx)
+		args = append(args, params.OnlyVollkasko)
+	}
+
+	// Add sorting and pagination
+	query += ` ORDER BY o.price ` + params.SortOrder[6:] + `, id LIMIT $` + strconv.Itoa(argIdx+1) + ` OFFSET $` + strconv.Itoa(argIdx+2)
+	args = append(args, params.PageSize, (params.Page-1)*params.PageSize)
+
+	log.Printf("Query: %v\n", query)
+
+	// Execute the query
+	rows, err := r.db.Query(context.Background(), query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %w", err)
-	}
-	defer rows.Close()
-
-	var offers []models.ResponseOffer
-	for rows.Next() {
-		var offer models.ResponseOffer
-		if err := rows.Scan(&offer.ID, &offer.Data); err != nil {
-			return nil, fmt.Errorf("failed to parse query results: %w", err)
-		}
-		offers = append(offers, offer)
+		log.Printf("Query execution failed: %v\n", err)
 	}
 
-	return offers, nil
+	return rows, err
 }
 
 // Helper function to build the SQL query

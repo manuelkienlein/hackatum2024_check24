@@ -89,7 +89,7 @@ func (oc *OfferController) GetOffersHandler(c *fiber.Ctx) error {
 		MinFreeKilometer:      c.QueryInt("minFreeKilometer", 0),
 	}
 
-	response, err := oc.offerService.GetOffers(c.Context(), params)
+	response, err := oc.offerService.GetOffers(c, params)
 	if err != nil {
 		log.Printf("Error fetching offers: %v\n", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot fetch offers"})

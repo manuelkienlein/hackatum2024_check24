@@ -2,15 +2,13 @@ package internal
 
 import (
 	"context"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
-	"strconv"
 )
 
 // FilterOffers Filter offers based on various parameters
-func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
+/*func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 	// print the URL
 	log.Println(c.OriginalURL())
 
@@ -76,7 +74,7 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 		WHERE id = $1
 
 			UNION ALL
-		
+
 			-- Recursive case: Find children of the current regions
 			SELECT sr.id, sr.parent_id
 			FROM static_region_data sr
@@ -204,7 +202,7 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 		"freeKilometerRange": freeKilometerRanges,
 		"vollkaskoCount":     vollkaskoCount,
 	})
-}
+}*/
 
 // CreateOffers Create a new offer and insert it into the database
 func CreateOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
