@@ -2,12 +2,14 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"server/internal/models"
 	"strconv"
+	"strings"
 )
 
 type OfferRepository interface {
@@ -120,6 +122,12 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 	args = append(args, params.PageSize, params.Page*params.PageSize)
 
 	//log.Printf("Query: %v\n", query)
+<<<<<<< HEAD
+=======
+	//log.Printf("SQL query executed: %s, args: %v", query, args)
+	formattedQuery := FormatQuery(query, args)
+	fmt.Println("Formatted Query: ", formattedQuery)
+>>>>>>> origin/manuel
 
 	// Execute the query
 	rows, err := r.db.Query(context.Background(), query, args...)
@@ -128,4 +136,12 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 	}
 
 	return rows, err
+}
+
+func FormatQuery(query string, args []interface{}) string {
+	for i, arg := range args {
+		placeholder := fmt.Sprintf("$%d", i+1)
+		query = strings.Replace(query, placeholder, fmt.Sprintf("'%v'", arg), 1)
+	}
+	return query
 }
