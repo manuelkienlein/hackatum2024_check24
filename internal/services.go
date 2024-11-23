@@ -11,6 +11,9 @@ import (
 
 // FilterOffers Filter offers based on various parameters
 func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
+	// print the URL
+	log.Println(c.OriginalURL())
+
 	// Parse and validate query parameters
 	regionID, err := strconv.Atoi(c.Query("regionID"))
 	if err != nil {
