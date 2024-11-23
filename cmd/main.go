@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"log"
-	"server/internal"
 	"server/internal/controller"
 	"server/internal/database"
+	"server/internal/init"
 	"server/internal/repository"
 	"server/internal/service"
 )
@@ -44,6 +43,7 @@ func main() {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
+	// Init components
 	offerRepo := repository.NewOfferRepository(dbPool)
 	offerService := service.NewOfferService(offerRepo)
 	offerController := controller.NewOfferController(offerService)
@@ -56,23 +56,11 @@ func main() {
 		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${url} | ${error}\n",
 	}))
 
-	// Register routes (DEPRECATED)
-	internal.RegisterRoutes(app, dbPool)
-
 	// Register new routes
-	app.Delete("/api/offers", offerController.DeleteOffersHandler)
-	app.Post("/api/offers", offerController.CreateOffersHandler)
-	app.Get("/api/offers", offerController.GetOffersHandler)
+	init.RegisterRoutes(app, offerController)
 
 	// Add swagger
-	cfg := swagger.Config{
-		BasePath: "/",
-		FilePath: "./docs/openapi.yaml",
-		Path:     "openapi",
-		Title:    "Swagger API Docs",
-	}
-
-	app.Use(swagger.New(cfg))
+	init.RegisterSwagger(app)
 
 	// Start server
 	err = app.Listen(":80")

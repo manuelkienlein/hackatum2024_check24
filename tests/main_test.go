@@ -9,8 +9,11 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"server/internal"
+	"server/internal/controller"
 	"server/internal/database"
+	"server/internal/init"
+	"server/internal/repository"
+	"server/internal/service"
 	"testing"
 )
 
@@ -38,7 +41,12 @@ func setupApp() *fiber.App {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	internal.RegisterRoutes(app, dbPool)
+	// Init components
+	offerRepo := repository.NewOfferRepository(dbPool)
+	offerService := service.NewOfferService(offerRepo)
+	offerController := controller.NewOfferController(offerService)
+
+	init.RegisterRoutes(app, offerController)
 
 	return app
 }
@@ -149,6 +157,6 @@ func TestPostOffers(t *testing.T) {
 	// Überprüfen, ob keine Fehler beim Testen aufgetreten sind
 	assert.NoError(t, err)
 
-	// Überprüfen, ob der Statuscode >= 200 ist
-	assert.GreaterOrEqual(t, resp.StatusCode, 200)
+	// Überprüfen, ob der Statuscode = 200 ist
+	assert.Equal(t, resp.StatusCode, 200)
 }
