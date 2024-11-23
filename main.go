@@ -41,6 +41,7 @@ type VollkaskoCount struct {
 
 func filterOffers(c *fiber.Ctx, regionID int, timeRangeStart int, timeRangeEnd int, numberDays int, sortOrder string, page int, pageSize int, priceRangeWidth int, minFreeKilometerWidth int, minNumberSeats int, minPrice int, maxPrice int, carType string, onlyVollkasko bool, minFreeKilometer int) error {
 	// Placeholder data for response
+	// TODO
 	offers := []Offer{
 		{ID: "offer1", Data: "data1"},
 		{ID: "offer2", Data: "data2"},
@@ -83,6 +84,20 @@ func filterOffers(c *fiber.Ctx, regionID int, timeRangeStart int, timeRangeEnd i
 	})
 }
 
+func createOffers(c *fiber.Ctx) error {
+	// Placeholder logic to create offers
+	// TODO
+
+	return c.Status(fiber.StatusOK).SendString("Offers were created")
+}
+
+func deleteOffers(c *fiber.Ctx) error {
+	// Placeholder logic to delete offers
+	// TODO
+
+	return c.Status(fiber.StatusOK).SendString("Offers were deleted")
+}
+
 func main() {
 	app := fiber.New()
 
@@ -109,26 +124,13 @@ func main() {
 	app.Delete("/api/offers", func(c *fiber.Ctx) error {
 		// Logic to clean up the data goes here
 
-		return c.Status(fiber.StatusOK).SendString("Data was cleaned up")
+		return deleteOffers(c)
 	})
 
 	app.Post("/api/offers", func(c *fiber.Ctx) error {
 		// Logic to create the offers goes here
 
-		return c.Status(fiber.StatusOK).SendString("Offers were created")
-	})
-
-	app.Get("/api/offers", func(c *fiber.Ctx) error {
-		return c.SendString("GET Offers!")
-	})
-
-	app.Post("/api/offers", func(c *fiber.Ctx) error {
-		// endpoint is expected to be blocking. Your solution should only return a response once the offers have been successfully processed and can be read from with new GET requests. During this blocking time, there are no requests to the GET endpoint we don't send any request that would require the offer to be present or change the expected result.
-		return c.SendString("POST Offers!")
-	})
-
-	app.Delete("/api/offers", func(c *fiber.Ctx) error {
-		return c.SendString("DELETE Offers!")
+		return createOffers(c)
 	})
 
 	app.Listen(":3000")
