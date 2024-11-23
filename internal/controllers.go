@@ -11,8 +11,4 @@ func RegisterRoutes(app *fiber.App, dbPool *pgxpool.Pool) {
 		return FilterOffers(dbPool, c)
 	})
 
-	app.Post("/api/offers", func(c *fiber.Ctx) error {
-		return CreateOffers(dbPool, c)
-	})
-
 }

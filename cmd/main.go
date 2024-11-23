@@ -61,6 +61,7 @@ func main() {
 
 	// Register new routes
 	app.Delete("/api/offers", offerController.DeleteOffersHandler)
+	app.Post("/api/offers", offerController.CreateOffersHandler)
 
 	// Add swagger
 	cfg := swagger.Config{
