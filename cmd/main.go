@@ -53,7 +53,7 @@ func main() {
 
 	// Add logger
 	app.Use(logger.New(logger.Config{
-		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${url} | ${error}\n",
+		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${url} | ${body}\n",
 	}))
 
 	// Register new routes

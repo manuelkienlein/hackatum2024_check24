@@ -79,7 +79,7 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 				AND o.end_date <= $3
 				AND o.end_date - start_date >= $4
 	`
-	args := []interface{}{params.RegionID, params.TimeRangeStart, params.TimeRangeEnd, params.NumberDays}
+	args := []interface{}{params.RegionID, params.TimeRangeStart, params.TimeRangeEnd, params.NumberDays * 24 * 3600 * 1000}
 	argIdx := len(args)
 
 	// Add dynamic filters
