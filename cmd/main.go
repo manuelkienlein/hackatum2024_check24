@@ -5,6 +5,7 @@ import (
 	"flag"
 	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"log"
 	"server/internal"
 	"server/internal/database"
@@ -42,6 +43,9 @@ func main() {
 
 	log.Println("Starting webserver...")
 	app := fiber.New()
+
+	// Add logger
+	app.Use(logger.New())
 
 	// Register routes
 	internal.RegisterRoutes(app, dbPool)
