@@ -1,5 +1,5 @@
 -- Create offers table
-CREATE TABLE offers (
+CREATE TABLE IF NOT EXISTS offers (
     id UUID PRIMARY KEY, -- Unique identifier for each offer
     data VARCHAR(500) NOT NULL, -- additional data of the offer
     most_specific_region_id INTEGER NOT NULL, -- Region ID
