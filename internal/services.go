@@ -20,17 +20,17 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 		log.Printf("Invalid regionID: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid regionID"})
 	}
-	timeRangeStart, err := strconv.Atoi(c.Query("timeRangeStart"))
+	//timeRangeStart, err := strconv.Atoi(c.Query("timeRangeStart"))
 	if err != nil {
 		log.Printf("Invalid timeRangeStart: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid timeRangeStart"})
 	}
-	timeRangeEnd, err := strconv.Atoi(c.Query("timeRangeEnd"))
+	//timeRangeEnd, err := strconv.Atoi(c.Query("timeRangeEnd"))
 	if err != nil {
 		log.Printf("Invalid timeRangeEnd: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid timeRangeEnd"})
 	}
-	numberDays, err := strconv.Atoi(c.Query("numberDays"))
+	//numberDays, err := strconv.Atoi(c.Query("numberDays"))
 	if err != nil {
 		log.Printf("Invalid numberDays: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid numberDays"})
@@ -60,37 +60,37 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 		log.Printf("Invalid minFreeKilometerWidth: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid minFreeKilometerWidth"})
 	}
-	minNumberSeats, _ := strconv.Atoi(c.Query("minNumberSeats"))
-	minPrice, _ := strconv.Atoi(c.Query("minPrice"))
-	maxPrice, _ := strconv.Atoi(c.Query("maxPrice"))
-	carType := c.Query("carType")
-	onlyVollkasko, _ := strconv.ParseBool(c.Query("onlyVollkasko"))
-	minFreeKilometer, _ := strconv.Atoi(c.Query("minFreeKilometer"))
+	//minNumberSeats, _ := strconv.Atoi(c.Query("minNumberSeats"))
+	//minPrice, _ := strconv.Atoi(c.Query("minPrice"))
+	//maxPrice, _ := strconv.Atoi(c.Query("maxPrice"))
+	//carType := c.Query("carType")
+	//onlyVollkasko, _ := strconv.ParseBool(c.Query("onlyVollkasko"))
+	//minFreeKilometer, _ := strconv.Atoi(c.Query("minFreeKilometer"))
 
 	// Build SQL query dynamically
 	query := `
-		WITH RECURSIVE ParentRegions AS (
-			-- Base case
-			SELECT id, parent_id
-			FROM static_region_data
-			WHERE id = $1
-		
+		WITH RECURSIVE SubRegions AS (
+		-- Base case: Start with the given region ID
+		SELECT id, parent_id
+		FROM static_region_data
+		WHERE id = $1
+
 			UNION ALL
 		
-			-- Recursive case: Find parents of the current regions
+			-- Recursive case: Find children of the current regions
 			SELECT sr.id, sr.parent_id
 			FROM static_region_data sr
-			INNER JOIN ParentRegions pr ON sr.id = pr.parent_id
+			INNER JOIN SubRegions sbr ON sr.parent_id = sbr.id
 		)
 		SELECT o.*
 		FROM offers o
-		JOIN ParentRegions pr ON o.most_specific_region_id = pr.id
+		JOIN SubRegions sr ON o.most_specific_region_id = sr.id
 		WHERE o.start_date >= $2
-			AND o.end_date <= $3
-			AND o.end_date - start_date = $4
-			AND o.price >= $5
-			AND o.price < $6
-			AND o.free_kilometers >= $7
+				AND o.end_date <= $3
+				AND o.end_date - start_date = $4
+				AND o.price >= $5
+				AND o.price < $6
+				AND o.free_kilometers >= $7
 	`
 	args := []interface{}{regionID, timeRangeStart, timeRangeEnd, numberDays, minPrice, maxPrice, minFreeKilometer}
 	argIdx := len(args)
@@ -136,10 +136,10 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 
 	for rows.Next() {
 		var id, data, carType string
-		var price, numberSeats, freeKilometers int
+		var regionId, startDate, endDate, price, numberSeats, freeKilometers int
 		var onlyVollkasko bool
 
-		if err := rows.Scan(&id, &data, &price, &carType, &numberSeats, &freeKilometers, &onlyVollkasko); err != nil {
+		if err := rows.Scan(&id, &data, &regionId, &startDate, &endDate, &numberSeats, &price, &carType, &onlyVollkasko, &freeKilometers); err != nil {
 			log.Printf("Row scan failed: %v\n", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to process offers"})
 		}
