@@ -119,7 +119,7 @@ func (oc *OfferController) GetOffersHandler(c *fiber.Ctx) error {
 
 // CreateOffersHandler verarbeitet die POST-Anfragen
 func (oc *OfferController) CreateOffersHandler(c *fiber.Ctx) error {
-	log.Printf("Offers: %v\n", string(c.Body()))
+	//log.Printf("Offers: %v\n", string(c.Body()))
 	var request struct {
 		Offers []models.Offer `json:"offers"`
 	}

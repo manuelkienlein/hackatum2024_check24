@@ -75,7 +75,7 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 		JOIN SubRegions sr ON o.most_specific_region_id = sr.id
 		WHERE o.start_date >= $2
 				AND o.end_date <= $3
-				AND o.end_date - start_date >= $4
+				AND o.end_date - start_date >= $4*24*3600
 	`
 	args := []interface{}{params.RegionID, params.TimeRangeStart, params.TimeRangeEnd, params.NumberDays}
 	argIdx := len(args)
@@ -84,35 +84,35 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 	if params.MinPrice != nil {
 		argIdx++
 		query += ` AND o.price >= $` + strconv.Itoa(argIdx)
-		args = append(args, params.MinPrice)
+		args = append(args, *params.MinPrice)
 	}
 
 	if params.MaxPrice != nil {
 		argIdx++
 		query += ` AND o.price <= $` + strconv.Itoa(argIdx)
-		args = append(args, params.MaxPrice)
+		args = append(args, *params.MaxPrice)
 	}
 
 	if params.MinFreeKilometer != nil {
 		argIdx++
 		query += ` AND o.free_kilometers >= $` + strconv.Itoa(argIdx)
-		args = append(args, params.MinFreeKilometer)
+		args = append(args, *params.MinFreeKilometer)
 	}
 
 	if params.MinNumberSeats != nil {
 		argIdx++
 		query += ` AND o.number_seats >= $` + strconv.Itoa(argIdx)
-		args = append(args, params.MinNumberSeats)
+		args = append(args, *params.MinNumberSeats)
 	}
 	if params.CarType != nil {
 		argIdx++
 		query += ` AND o.car_type = $` + strconv.Itoa(argIdx)
-		args = append(args, params.CarType)
+		args = append(args, *params.CarType)
 	}
 	if params.OnlyVollkasko != nil {
 		argIdx++
 		query += ` AND o.only_vollkasko = $` + strconv.Itoa(argIdx)
-		args = append(args, params.OnlyVollkasko)
+		args = append(args, *params.OnlyVollkasko)
 	}
 
 	// Add sorting and pagination
