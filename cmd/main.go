@@ -14,7 +14,7 @@ func main() {
 	internal.RegisterRoutes(app, dbPool)
 
 	// Start server
-	err := app.Listen(":3000")
+	err := app.Listen(":80")
 	if err != nil {
 		return
 	}
