@@ -17,38 +17,47 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 	// Parse and validate query parameters
 	regionID, err := strconv.Atoi(c.Query("regionID"))
 	if err != nil {
+		log.Printf("Invalid regionID: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid regionID"})
 	}
 	timeRangeStart, err := strconv.Atoi(c.Query("timeRangeStart"))
 	if err != nil {
+		log.Printf("Invalid timeRangeStart: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid timeRangeStart"})
 	}
 	timeRangeEnd, err := strconv.Atoi(c.Query("timeRangeEnd"))
 	if err != nil {
+		log.Printf("Invalid timeRangeEnd: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid timeRangeEnd"})
 	}
 	numberDays, err := strconv.Atoi(c.Query("numberDays"))
 	if err != nil {
+		log.Printf("Invalid numberDays: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid numberDays"})
 	}
 	sortOrder := c.Query("sortOrder")
 	if sortOrder != "price-asc" && sortOrder != "price-desc" {
+		log.Printf("Invalid sortOrder: %v\n", sortOrder)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid sortOrder"})
 	}
 	page, err := strconv.Atoi(c.Query("page"))
 	if err != nil || page < 1 {
+		log.Printf("Invalid page: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid page"})
 	}
 	pageSize, err := strconv.Atoi(c.Query("pageSize"))
 	if err != nil || pageSize < 1 {
+		log.Printf("Invalid pageSize: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid pageSize"})
 	}
 	priceRangeWidth, err := strconv.Atoi(c.Query("priceRangeWidth"))
 	if err != nil || priceRangeWidth < 1 {
+		log.Printf("Invalid priceRangeWidth: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid priceRangeWidth"})
 	}
 	minFreeKilometerWidth, err := strconv.Atoi(c.Query("minFreeKilometerWidth"))
 	if err != nil || minFreeKilometerWidth < 1 {
+		log.Printf("Invalid minFreeKilometerWidth: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid minFreeKilometerWidth"})
 	}
 	minNumberSeats, _ := strconv.Atoi(c.Query("minNumberSeats"))
@@ -65,7 +74,7 @@ func FilterOffers(dbPool *pgxpool.Pool, c *fiber.Ctx) error {
 		WHERE most_specific_region_id = $1
 			AND start_date >= $2
 			AND end_date <= $3
-			AND number_days = $4
+			AND end_date - start_date = $4
 			AND price >= $5
 			AND price < $6
 			AND free_kilometers >= $7
