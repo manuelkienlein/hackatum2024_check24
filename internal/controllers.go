@@ -2,10 +2,11 @@ package internal
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"strconv"
 )
 
-func RegisterRoutes(app *fiber.App) {
+func RegisterRoutes(app *fiber.App, dbPool *pgxpool.Pool) {
 
 	app.Get("/api/offers", func(c *fiber.Ctx) error {
 		regionID, _ := strconv.Atoi(c.Query("regionID"))
@@ -36,7 +37,7 @@ func RegisterRoutes(app *fiber.App) {
 	app.Post("/api/offers", func(c *fiber.Ctx) error {
 		// Logic to create the offers goes here
 
-		return CreateOffers(c)
+		return CreateOffers(dbPool, c)
 	})
 
 }

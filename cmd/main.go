@@ -6,9 +6,16 @@ import (
 )
 
 func main() {
+	// Initialize
+	dbPool := internal.InitDB()
 	app := fiber.New()
 
-	internal.RegisterRoutes(app)
+	// Register routes
+	internal.RegisterRoutes(app, dbPool)
 
-	app.Listen(":3000")
+	// Start server
+	err := app.Listen(":3000")
+	if err != nil {
+		return
+	}
 }
