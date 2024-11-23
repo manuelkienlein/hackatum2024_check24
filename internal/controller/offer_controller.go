@@ -17,6 +17,87 @@ func NewOfferController(service *service.OfferService) *OfferController {
 	return &OfferController{offerService: service}
 }
 
+// GetOffersHandler verarbeitet GET-Abfragen
+/*func (oc *OfferController) GetOffersHandler(c *fiber.Ctx) error {
+	// TODO
+
+	// Parse query parameters into the struct
+	params := models.OfferFilterParams{
+		RegionID:              c.QueryInt("regionID"),
+		TimeRangeStart:        c.QueryInt("timeRangeStart"),
+		TimeRangeEnd:          c.QueryInt("timeRangeEnd"),
+		NumberDays:            c.QueryInt("numberDays"),
+		SortOrder:             c.Query("sortOrder"),
+		Page:                  c.QueryInt("page"),
+		PageSize:              c.QueryInt("pageSize"),
+		PriceRangeWidth:       c.QueryInt("priceRangeWidth"),
+		MinFreeKilometerWidth: c.QueryInt("minFreeKilometerWidth"),
+		MinNumberSeats:        c.QueryInt("minNumberSeats", 0),
+		MinPrice:              c.QueryInt("minPrice", 0),
+		MaxPrice:              c.QueryInt("maxPrice", 0),
+		CarType:               c.Query("carType"),
+		OnlyVollkasko:         c.Query("onlyVollkasko") == "true",
+		MinFreeKilometer:      c.QueryInt("minFreeKilometer", 0),
+	}
+
+	// Build the SQL query
+	sqlQuery := oc.offerService.buildSQLQuery(params)
+
+	// Execute the query (use your database connection)
+
+	// Further aggregation stuff
+	offers := []models.ResponseOffer{}
+	// TODO
+
+	// Example aggregations (replace with your database logic)
+	priceRanges := []models.PriceRange{{Start: 10000, End: 15000, Count: 4}}
+	carTypeCounts := models.CarTypeCounts{Small: 1, Sports: 2, Luxury: 1, Family: 0}
+	seatsCount := []models.SeatsCount{{NumberSeats: 5, Count: 4}}
+	freeKilometerRange := []models.FreeKilometerRange{{Start: 100, End: 150, Count: 4}}
+	vollkaskoCount := models.VollkaskoCount{TrueCount: 3, FalseCount: 1}
+
+	// Prepare the response
+	response := fiber.Map{
+		"offers":             offers,
+		"priceRanges":        priceRanges,
+		"carTypeCounts":      carTypeCounts,
+		"seatsCount":         seatsCount,
+		"freeKilometerRange": freeKilometerRange,
+		"vollkaskoCount":     vollkaskoCount,
+	}
+
+	return c.JSON(response)
+
+	return c.Status(fiber.StatusNoContent).SendString("TODO")
+}*/
+func (oc *OfferController) GetOffersHandler(c *fiber.Ctx) error {
+	params := models.OfferFilterParams{
+		RegionID:              c.QueryInt("regionID"),
+		TimeRangeStart:        c.QueryInt("timeRangeStart"),
+		TimeRangeEnd:          c.QueryInt("timeRangeEnd"),
+		NumberDays:            c.QueryInt("numberDays"),
+		SortOrder:             c.Query("sortOrder"),
+		Page:                  c.QueryInt("page"),
+		PageSize:              c.QueryInt("pageSize"),
+		PriceRangeWidth:       c.QueryInt("priceRangeWidth"),
+		MinFreeKilometerWidth: c.QueryInt("minFreeKilometerWidth"),
+		MinNumberSeats:        c.QueryInt("minNumberSeats", 0),
+		MinPrice:              c.QueryInt("minPrice", 0),
+		MaxPrice:              c.QueryInt("maxPrice", 0),
+		CarType:               c.Query("carType"),
+		OnlyVollkasko:         c.Query("onlyVollkasko") == "true",
+		MinFreeKilometer:      c.QueryInt("minFreeKilometer", 0),
+	}
+
+	response, err := oc.offerService.GetOffers(c.Context(), params)
+	if err != nil {
+		log.Printf("Error fetching offers: %v\n", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot fetch offers"})
+	}
+
+	return c.JSON(response)
+}
+
 // CreateOffersHandler verarbeitet die POST-Anfragen
 func (oc *OfferController) CreateOffersHandler(c *fiber.Ctx) error {
 	var request struct {
