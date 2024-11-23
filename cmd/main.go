@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/gofiber/fiber/v2"
 	"log"
 	"server/internal"
@@ -9,10 +10,13 @@ import (
 )
 
 func main() {
-
 	log.Println("Starting application...")
 
-	// PostgreSQL-Verbindung herstellen
+	// Define the dropTables flag
+	dropTables := flag.Bool("dropTables", false, "Drop the tables before starting the application")
+	flag.Parse()
+
+	// PostgreSQL connection
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -22,7 +26,15 @@ func main() {
 	}
 	defer dbPool.Close()
 
-	// Tabellen erstellen
+	// Drop tables if the flag is set
+	if *dropTables {
+		if err := database.DropTables(ctx, dbPool); err != nil {
+			log.Fatalf("Failed to drop tables: %v", err)
+		}
+		log.Println("Tables dropped successfully")
+	}
+
+	// Migrate the database
 	if err := database.Migrate(ctx, dbPool); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}

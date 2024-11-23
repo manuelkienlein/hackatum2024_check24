@@ -23,6 +23,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	query := `
 	CREATE TABLE offers (
     id SERIAL PRIMARY KEY, -- Unique identifier for each offer
+    data VARCHAR(256) NOT NULL, -- additional data of the offer
     region_id INTEGER NOT NULL, -- Region ID
     time_range_start BIGINT NOT NULL, -- Start time of the range (ms since UNIX epoch)
     time_range_end BIGINT NOT NULL, -- End time of the range (ms since UNIX epoch)
@@ -35,7 +36,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
     min_number_seats INTEGER, -- Minimum number of seats in the car
     min_price NUMERIC(10, 2), -- Minimum price in cents
     max_price NUMERIC(10, 2), -- Maximum price in cents
-    car_type VARCHAR(20) CHECK (car_type IN ('small', 'sports', 'luxury', 'family')), -- Type of the car
+    car_type VARCHAR(20), -- Type of the car
     only_vollkasko BOOLEAN NOT NULL, -- Whether only offers with vollkasko are included
     min_free_kilometer INTEGER -- Minimum free kilometers included
 	);
@@ -105,6 +106,21 @@ func insertRegion(ctx context.Context, pool *pgxpool.Pool, region Region, parent
 		if err := insertRegion(ctx, pool, subregion, &region.ID); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// DropTables drops the offers and static_region_data tables/fix
+func DropTables(ctx context.Context, pool *pgxpool.Pool) error {
+	_, err := pool.Exec(ctx, "DROP TABLE IF EXISTS offers")
+	if err != nil {
+		return err
+	}
+
+	_, err = pool.Exec(ctx, "DROP TABLE IF EXISTS static_region_data")
+	if err != nil {
+		return err
 	}
 
 	return nil
