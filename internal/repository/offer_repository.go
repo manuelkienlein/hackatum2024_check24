@@ -105,7 +105,7 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 	query += ` ORDER BY o.price ` + params.SortOrder[6:] + `, id LIMIT $` + strconv.Itoa(argIdx+1) + ` OFFSET $` + strconv.Itoa(argIdx+2)
 	args = append(args, params.PageSize, (params.Page-1)*params.PageSize)
 
-	log.Printf("Query: %v\n", query)
+	//log.Printf("Query: %v\n", query)
 
 	// Execute the query
 	rows, err := r.db.Query(context.Background(), query, args...)
