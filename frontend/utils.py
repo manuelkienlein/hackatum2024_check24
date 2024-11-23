@@ -25,7 +25,7 @@ def render_offer(index, offer):
     num_region_dict = st.session_state["num_region_dict"]
     region = num_region_dict[str(offer["RegionID"])]
     number_seats = str(offer["NumberSeats"])
-    price = str(offer["Price"])
+    price = int(offer["Price"])
     car_type = str(offer["CarType"])
     car_image = car_type_to_image[car_type]
     free_km = str(offer["FreeKilometers"])
@@ -48,7 +48,7 @@ def render_offer(index, offer):
         st.write("  ")
         st.write("  ")
         st.write(f"{formatted_date}")
-        st.write(f"Price: **{price}**")
+        st.write(f"Price: **{float(price/100):.2f}€**")
     with col3:
         st.write("  ")
         st.write("  ")

@@ -103,7 +103,7 @@ if st.session_state["current_state"] == 1:
     with st.sidebar:
         st.write(" ")
 
-        st.write("**Filter Options**")
+        st.write("**Advanced Filter Options**")
         min_seat_num = st.number_input("Min. Seat Number", min_value=1,step=1, max_value=50, value=1, placeholder="Min. Free Seats")
         only_vollkasko = st.toggle("Only Vollkasko", value=False)
 
@@ -135,7 +135,7 @@ if st.session_state["current_state"] == 1:
 
     with c4:
         current_page = st.session_state["current_page_index"]
-        st.write(f"**Current Page: {current_page}**")
+        st.write(f"**Current Page: {current_page + 1}**")
     with c5:
         current_page = st.session_state["current_page_index"] + 1
         next = st.button("Next", use_container_width=True)
@@ -146,10 +146,11 @@ if st.session_state["current_state"] == 1:
 def wait_for_response():
     c1, c2, c3 = st.columns([3,1,3])
     with c2:
+        st.toast("Fetching new data")
         with st.spinner():
             response = get_dummy_response()
             return response
-
+        st.toast("Finished fetching new data")
 
 def perform_search():
     page_index = st.session_state["current_page_index"]
