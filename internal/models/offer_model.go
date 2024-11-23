@@ -23,12 +23,12 @@ type OfferFilterParams struct {
 	PageSize              int
 	PriceRangeWidth       int
 	MinFreeKilometerWidth int
-	MinNumberSeats        int
-	MinPrice              int
-	MaxPrice              int
-	CarType               string
-	OnlyVollkasko         bool
-	MinFreeKilometer      int
+	MinNumberSeats        *int
+	MinPrice              *int
+	MaxPrice              *int
+	CarType               *string
+	OnlyVollkasko         *bool
+	MinFreeKilometer      *int
 }
 
 type ResponseOffer struct {

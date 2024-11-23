@@ -79,7 +79,7 @@ func TestGetOffersAdvanced(t *testing.T) {
 
 	// Set query parameters
 	q := req.URL.Query()
-	q.Add("regionID", "1")
+	q.Add("regionID", "0")
 	q.Add("timeRangeStart", "1732104000000") // Example timestamp in ms
 	q.Add("timeRangeEnd", "1732449600000")   // Example timestamp in ms
 	q.Add("numberDays", "5")
