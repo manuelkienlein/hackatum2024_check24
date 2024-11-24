@@ -70,8 +70,9 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 
 		// if all aggregate filters are satisfied (and not nil), add the offer to the response
 		//if minNumberSeatsFlag && minPriceFlag && maxPriceFlag && carTypeFlag && onlyVollkaskoFlag && minFreeKilometerFlag {
-		offers = append(offers, models.ResponseOffer{ID: id, Data: data})
-		//}
+		if maxPriceFlag && minFreeKilometerFlag {
+			offers = append(offers, models.ResponseOffer{ID: id, Data: data})
+		}
 
 		// Aggregate price ranges
 		if minNumberSeatsFlag && carTypeFlag && onlyVollkaskoFlag && minFreeKilometerFlag {
