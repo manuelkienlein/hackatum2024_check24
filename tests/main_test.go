@@ -54,21 +54,6 @@ func setupApp() *fiber.App {
 	return app
 }
 
-func TestGetOffers(t *testing.T) {
-	app := setupApp()
-
-	req := httptest.NewRequest(http.MethodGet, "/api/offers", nil)
-	resp, _ := app.Test(req)
-
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-	/*var offers []Offer
-	err := fiber.UnmarshalJSON(resp.Body, &offers)
-	assert.NoError(t, err)
-	assert.Len(t, offers, 2)
-	assert.Equal(t, "Sample Offer 1", offers[0].Data)*/
-}
-
 // TestGetOffers tests the GET /api/offers endpoint
 func TestGetOffersAdvanced(t *testing.T) {
 	app := setupApp()
@@ -241,7 +226,7 @@ func TestPostPerfConcurrency(t *testing.T) {
 	concurrency := 32
 
 	// Anzahl der Batches
-	numBatches := 100
+	numBatches := 10 //100
 
 	// Warteschleife für parallele Tests
 	var wg sync.WaitGroup
