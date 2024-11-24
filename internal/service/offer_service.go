@@ -7,6 +7,7 @@ import (
 	"log"
 	"server/internal/models"
 	"server/internal/repository"
+	"strconv"
 )
 
 type OfferService struct {
@@ -144,7 +145,7 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 		freeKilometerRanges = append(freeKilometerRanges, models.FreeKilometerRange{Start: start, End: end, Count: count})
 	}
 
-	log.Println(string(rune(rowCount)) + " | " + c.OriginalURL())
+	log.Println(strconv.Itoa(rowCount) + " | " + c.OriginalURL() + "\n")
 
 	// Return the response
 	return models.OfferQueryResponse{
