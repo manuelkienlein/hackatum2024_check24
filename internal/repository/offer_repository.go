@@ -29,16 +29,32 @@ func NewOfferRepository(db *pgxpool.Pool) OfferRepository {
 
 // CreateOffers erstellt einen neuen Offer Datensatz in der Datenbank
 func (r *offerRepository) CreateOffers(ctx context.Context, offers []models.Offer) error {
-	for _, offer := range offers {
-		_, err := r.db.Exec(ctx, `
-			INSERT INTO offers (id, data, most_specific_region_id, start_date, end_date, number_seats, price, car_type, only_vollkasko, free_kilometers)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-			offer.ID, offer.Data, offer.MostSpecificRegionID, offer.StartDate, offer.EndDate, offer.NumberSeats, offer.Price, offer.CarType, offer.OnlyVollkasko, offer.FreeKilometers,
-		)
-		if err != nil {
-			return err
-		}
+	if len(offers) == 0 {
+		return nil
 	}
+
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString(`
+	  INSERT INTO offers (id, data, most_specific_region_id, start_date, end_date, number_seats, price, car_type, only_vollkasko, free_kilometers)
+	  VALUES
+	 `)
+
+	args := make([]interface{}, 0, len(offers)*10)
+	for i, offer := range offers {
+		if i > 0 {
+			queryBuilder.WriteString(", ")
+		}
+		queryBuilder.WriteString(fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+			i*10+1, i*10+2, i*10+3, i*10+4, i*10+5, i*10+6, i*10+7, i*10+8, i*10+9, i*10+10))
+		args = append(args, offer.ID, offer.Data, offer.MostSpecificRegionID, offer.StartDate, offer.EndDate, offer.NumberSeats, offer.Price, offer.CarType, offer.OnlyVollkasko, offer.FreeKilometers)
+	}
+
+	query := queryBuilder.String()
+	_, err := r.db.Exec(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
