@@ -62,7 +62,7 @@ func (r *offerRepository) CreateOffers(ctx context.Context, offers []models.Offe
 func (r *offerRepository) DeleteOldOffers(ctx context.Context) error {
 	query := `
         DELETE FROM offers
-        WHERE end_date < extract(epoch from now())*1000;
+        WHERE end_date < floor(extract(epoch from now())*1000);
     `
 	_, err := r.db.Exec(ctx, query)
 	if err != nil {
