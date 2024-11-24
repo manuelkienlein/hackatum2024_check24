@@ -54,17 +54,17 @@ class LogParser:
         return mismatches
 
     def print_summary(self):
-        print("Log Analysis Summary:")
+        print("***** -----===== Log Analysis Summary: =====----- *****")
         print(f"Total PUSH entries: {len(self.push_entries)}")
         print(f"Total READ entries: {len(self.read_entries)}")
         print(f"Total ERROR entries: {len(self.error_entries)}\n")
 
-        print("Summary of last 1000 entries:\n")
+        print("Summary of last 1000 entries:")
         print(", ".join(self.compacted_logs))
 
         mismatches = self.compare_read_results()
-        print(f"Mismatches found in READ entries: {len(mismatches)}")
-        return
+        print(f"\nMismatches found in READ entries: {len(mismatches)}")
+        return # DEBUGGING: ONLY DO AVOID TERMINAL BUFFER OVERFLOW
         #for mismatch in mismatches:
         #    print(f"\nID: {mismatch['id']}")
         #    print(f"Expected: {json.dumps(mismatch['expected'], indent=2)}")
