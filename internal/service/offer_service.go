@@ -39,10 +39,15 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 
 	// Process query results
 	offers := make([]models.ResponseOffer, 0, params.PageSize)
+	priceRangeCounts := make(map[string]int)
+	carTypeCounts := models.CarTypeCounts{Small: 0, Sports: 0, Luxury: 0, Family: 0}
+	seatsCount := make([]models.SeatsCount, 0)
+	freeKilometerCounts := make(map[string]int)
+	vollkaskoCount := models.VollkaskoCount{TrueCount: 0, FalseCount: 0}
+
 	for rows.Next() {
-		var id, data string
+		var id, data, carType string
 		var regionId, startDate, endDate, price, numberSeats, freeKilometers int
-		var carType string
 		var onlyVollkasko bool
 
 		if err := rows.Scan(&id, &data, &regionId, &startDate, &endDate, &numberSeats, &price, &carType, &onlyVollkasko, &freeKilometers); err != nil {
@@ -52,33 +57,46 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 
 		// Add offer to list
 		offers = append(offers, models.ResponseOffer{ID: id, Data: data})
-	}
 
-	// Fetch counts for the whole database
-	ctx := context.Background()
-	priceRangeCounts, err := s.offerRepository.GetPriceRangeCounts(ctx, params.PriceRangeWidth)
-	if err != nil {
-		return models.OfferQueryResponse{}, err
-	}
+		// Aggregate price ranges
+		priceRangeKey := fmt.Sprintf("%d-%d", (price/params.PriceRangeWidth)*params.PriceRangeWidth, ((price/params.PriceRangeWidth)+1)*params.PriceRangeWidth)
+		priceRangeCounts[priceRangeKey]++
 
-	carTypeCounts, err := s.offerRepository.GetCarTypeCounts(ctx)
-	if err != nil {
-		return models.OfferQueryResponse{}, err
-	}
+		// Aggregate car type counts
+		switch carType {
+		case "small":
+			carTypeCounts.Small++
+		case "sports":
+			carTypeCounts.Sports++
+		case "luxury":
+			carTypeCounts.Luxury++
+		case "family":
+			carTypeCounts.Family++
+		}
 
-	seatsCount, err := s.offerRepository.GetSeatsCount(ctx)
-	if err != nil {
-		return models.OfferQueryResponse{}, err
-	}
+		// Aggregate seats count
+		found := false
+		for i, sc := range seatsCount {
+			if sc.NumberSeats == numberSeats {
+				seatsCount[i].Count++
+				found = true
+				break
+			}
+		}
+		if !found {
+			seatsCount = append(seatsCount, models.SeatsCount{NumberSeats: numberSeats, Count: 1})
+		}
 
-	freeKilometerCounts, err := s.offerRepository.GetFreeKilometerCounts(ctx, params.MinFreeKilometerWidth)
-	if err != nil {
-		return models.OfferQueryResponse{}, err
-	}
+		// Aggregate free kilometer ranges
+		freeKilometerKey := fmt.Sprintf("%d-%d", (freeKilometers/params.MinFreeKilometerWidth)*params.MinFreeKilometerWidth, ((freeKilometers/params.MinFreeKilometerWidth)+1)*params.MinFreeKilometerWidth)
+		freeKilometerCounts[freeKilometerKey]++
 
-	vollkaskoCount, err := s.offerRepository.GetVollkaskoCount(ctx)
-	if err != nil {
-		return models.OfferQueryResponse{}, err
+		// Aggregate vollkasko count
+		if onlyVollkasko {
+			vollkaskoCount.TrueCount++
+		} else {
+			vollkaskoCount.FalseCount++
+		}
 	}
 
 	// Transform aggregated data into required format

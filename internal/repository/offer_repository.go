@@ -16,11 +16,6 @@ type OfferRepository interface {
 	DeleteOldOffers(ctx context.Context) error
 	CreateOffers(ctx context.Context, offers []models.Offer) error
 	GetOffers(c *fiber.Ctx, params models.OfferFilterParams) (pgx.Rows, error)
-	GetPriceRangeCounts(ctx context.Context, priceRangeWidth int) (map[string]int, error)
-	GetCarTypeCounts(ctx context.Context) (models.CarTypeCounts, error)
-	GetSeatsCount(ctx context.Context) ([]models.SeatsCount, error)
-	GetFreeKilometerCounts(ctx context.Context, minFreeKilometerWidth int) (map[string]int, error)
-	GetVollkaskoCount(ctx context.Context) (models.VollkaskoCount, error)
 }
 
 type offerRepository struct {
@@ -77,138 +72,6 @@ func (r *offerRepository) DeleteOldOffers(ctx context.Context) error {
 	return nil
 }
 
-func (r *offerRepository) GetPriceRangeCounts(ctx context.Context, priceRangeWidth int) (map[string]int, error) {
-	query := `
-		SELECT (price / $1) * $1 AS range_start, ((price / $1) + 1) * $1 AS range_end, COUNT(*)
-		FROM offers
-		GROUP BY range_start, range_end
-	`
-	rows, err := r.db.Query(ctx, query, priceRangeWidth)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	priceRangeCounts := make(map[string]int)
-	for rows.Next() {
-		var rangeStart, rangeEnd, count int
-		if err := rows.Scan(&rangeStart, &rangeEnd, &count); err != nil {
-			return nil, err
-		}
-		key := fmt.Sprintf("%d-%d", rangeStart, rangeEnd)
-		priceRangeCounts[key] = count
-	}
-	return priceRangeCounts, nil
-}
-
-func (r *offerRepository) GetCarTypeCounts(ctx context.Context) (models.CarTypeCounts, error) {
-	query := `
-		SELECT car_type, COUNT(*)
-		FROM offers
-		GROUP BY car_type
-	`
-	rows, err := r.db.Query(ctx, query)
-	if err != nil {
-		return models.CarTypeCounts{}, err
-	}
-	defer rows.Close()
-
-	carTypeCounts := models.CarTypeCounts{}
-	for rows.Next() {
-		var carType string
-		var count int
-		if err := rows.Scan(&carType, &count); err != nil {
-			return carTypeCounts, err
-		}
-		switch carType {
-		case "small":
-			carTypeCounts.Small = count
-		case "sports":
-			carTypeCounts.Sports = count
-		case "luxury":
-			carTypeCounts.Luxury = count
-		case "family":
-			carTypeCounts.Family = count
-		}
-	}
-	return carTypeCounts, nil
-}
-
-func (r *offerRepository) GetSeatsCount(ctx context.Context) ([]models.SeatsCount, error) {
-	query := `
-		SELECT number_seats, COUNT(*)
-		FROM offers
-		GROUP BY number_seats
-	`
-	rows, err := r.db.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	seatsCount := []models.SeatsCount{}
-	for rows.Next() {
-		var numberSeats, count int
-		if err := rows.Scan(&numberSeats, &count); err != nil {
-			return nil, err
-		}
-		seatsCount = append(seatsCount, models.SeatsCount{NumberSeats: numberSeats, Count: count})
-	}
-	return seatsCount, nil
-}
-
-func (r *offerRepository) GetFreeKilometerCounts(ctx context.Context, minFreeKilometerWidth int) (map[string]int, error) {
-	query := `
-		SELECT (free_kilometers / $1) * $1 AS range_start, ((free_kilometers / $1) + 1) * $1 AS range_end, COUNT(*)
-		FROM offers
-		GROUP BY range_start, range_end
-	`
-	rows, err := r.db.Query(ctx, query, minFreeKilometerWidth)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	freeKilometerCounts := make(map[string]int)
-	for rows.Next() {
-		var rangeStart, rangeEnd, count int
-		if err := rows.Scan(&rangeStart, &rangeEnd, &count); err != nil {
-			return nil, err
-		}
-		key := fmt.Sprintf("%d-%d", rangeStart, rangeEnd)
-		freeKilometerCounts[key] = count
-	}
-	return freeKilometerCounts, nil
-}
-
-func (r *offerRepository) GetVollkaskoCount(ctx context.Context) (models.VollkaskoCount, error) {
-	query := `
-		SELECT only_vollkasko, COUNT(*)
-		FROM offers
-		GROUP BY only_vollkasko
-	`
-	rows, err := r.db.Query(ctx, query)
-	if err != nil {
-		return models.VollkaskoCount{}, err
-	}
-	defer rows.Close()
-
-	vollkaskoCount := models.VollkaskoCount{}
-	for rows.Next() {
-		var onlyVollkasko bool
-		var count int
-		if err := rows.Scan(&onlyVollkasko, &count); err != nil {
-			return vollkaskoCount, err
-		}
-		if onlyVollkasko {
-			vollkaskoCount.TrueCount = count
-		} else {
-			vollkaskoCount.FalseCount = count
-		}
-	}
-	return vollkaskoCount, nil
-}
-
 func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) (pgx.Rows, error) {
 	// Build SQL query dynamically
 	query := `
@@ -244,7 +107,7 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 
 	if params.MaxPrice != nil {
 		argIdx++
-		query += ` AND o.price <= $` + strconv.Itoa(argIdx)
+		query += ` AND o.price < $` + strconv.Itoa(argIdx)
 		args = append(args, *params.MaxPrice)
 	}
 
