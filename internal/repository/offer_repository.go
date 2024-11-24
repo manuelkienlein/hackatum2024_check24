@@ -123,8 +123,8 @@ func (r *offerRepository) GetOffers(c *fiber.Ctx, params models.OfferFilterParam
 
 	//log.Printf("Query: %v\n", query)
 	//log.Printf("SQL query executed: %s, args: %v", query, args)
-	formattedQuery := FormatQuery(query, args)
-	fmt.Println("Formatted Query: ", formattedQuery)
+	//formattedQuery := FormatQuery(query, args)
+	//fmt.Println("Formatted Query: ", formattedQuery)
 
 	// Execute the query
 	rows, err := r.db.Query(context.Background(), query, args...)
