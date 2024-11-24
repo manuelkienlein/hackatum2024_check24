@@ -45,7 +45,11 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 	freeKilometerCounts := make(map[string]int)
 	vollkaskoCount := models.VollkaskoCount{TrueCount: 0, FalseCount: 0}
 
+	rowCount := 0
+
 	for rows.Next() {
+		rowCount++
+
 		var id, data, carType string
 		var regionId, startDate, endDate, price, numberSeats, freeKilometers int
 		var onlyVollkasko bool
@@ -139,6 +143,8 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 		}
 		freeKilometerRanges = append(freeKilometerRanges, models.FreeKilometerRange{Start: start, End: end, Count: count})
 	}
+
+	log.Println(string(rune(rowCount)) + " | " + c.OriginalURL())
 
 	// Return the response
 	return models.OfferQueryResponse{
