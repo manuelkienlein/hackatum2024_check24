@@ -31,3 +31,14 @@ Backend:
 
 Frontend:
 - Python with Streamlit for the web interface.
+
+## Screenshot
+
+### Home Page
+![plot](./docs/screenshot_home.png)
+
+### Results Page
+![plot](./docs/screenshot_results.png)
+
+### Bottom Page
+![plot](./docs/screenshot_bottom.png)

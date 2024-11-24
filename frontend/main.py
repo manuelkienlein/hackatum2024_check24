@@ -1,13 +1,14 @@
 import streamlit as st
 import json
 import time
-import collections
 import datetime
-import requests
+from datetime import timedelta
+from dummy import get_dummy_response
+from utils import render_offer, render_all_offers
 
 ENDPOINT_URL = "http://localhost:80/api/offers"
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", page_title="Go Api Go")
 
 # INIT SESSION STATES
 
@@ -20,11 +21,28 @@ if "region_num_dict" not in st.session_state:
         d = json.load(file)
     st.session_state["region_num_dict"] = d
 
+if "num_region_dict" not in st.session_state:
+    with open("num_region_dict.json", "r", encoding="utf-8") as file:
+        print("Read regions")
+        d = json.load(file)
+    st.session_state["num_region_dict"] = d
+
+
+
 if "current_page_index" not in st.session_state:
     st.session_state["current_page_index"] = 0
 
 if "page_size" not in st.session_state:
     st.session_state["page_size"] = 20    
+
+if "offers" not in st.session_state:
+    st.session_state["offers"] = []
+ 
+if "free_km_range" not in st.session_state:
+    st.session_state["free_km_range"] = 100
+
+if "price_range_width" not in st.session_state:
+    st.session_state["price_range_width"] = 50
 
 min_seat_num = 1
 only_vollkasko = 0
@@ -32,9 +50,27 @@ min_price = 0
 max_price = 0
 car_type = None
 min_free_km = 0
+refresh_button = False
+prev = False
+next = False
+page_size = 20
 
-st.header("Go Api Go - The Best Rental Car Service", divider="red")
+st.header("Go Api Go - The Best Rental Car Service", divider="blue")
 
+st.markdown("""
+    <style>
+        .reportview-container {
+            margin-top: -2em;
+        }
+        #MainMenu {visibility: hidden;}
+        .stDeployButton {display:none;}
+        footer {visibility: hidden;}
+        #stDecoration {display:none;}
+        [data-testid="stBaseButton-header"] {
+            display: none;   
+        } 
+    </style>
+""", unsafe_allow_html=True)
 if st.session_state["current_state"] == 0:
     st.write(" ")
     st.write(" ")
@@ -45,7 +81,7 @@ if st.session_state["current_state"] == 0:
     st.write(" ")
     st.write(" ")
     st.write(" ")
-c1, c2,c3,c4, c5, c6, c7, c8 = st.columns([1,0.6,0.5,0.6,0.5,0.4,0.8,0.5])
+c1, c2,c3,c4, c5, c6, c7, c8 = st.columns([1,0.6,0.5,0.6,0.5,0.4,0.8,0.5], vertical_alignment="bottom")
 with c1:
     region_options = st.session_state["region_num_dict"].keys()
     region_options = sorted(region_options)
@@ -63,12 +99,16 @@ with c3:
     begin_time = st.time_input("Start Time Input",value="now", label_visibility="hidden")
 
 with c4:
-    end_date = st.date_input("Time Range End", value="today", label_visibility="visible")
+    today = datetime.datetime.now()
+
+    # Calculate tomorrow's date and time
+    end_date_val = today + timedelta(days=2)
+    end_date = st.date_input("Time Range End", value=end_date_val, label_visibility="visible")
 with c5:
     end_time = st.time_input("End Time Input",value="now", label_visibility="hidden")
 
 with c6:
-    amount_days = st.number_input(label="Days",value=10, min_value=1, step=1, placeholder="Choose the amount of days (24h)")
+    amount_days = st.number_input(label="Days",value=2, min_value=1, step=1, placeholder="Choose the amount of days (24h)")
 
 with c7:
     order = st.selectbox(label="Order", options=["Price Ascending", "Price Descending"], index=0)
@@ -85,11 +125,13 @@ with c8:
 
 # Show Big Menu
 if st.session_state["current_state"] == 1:
-    c1, c2 = st.columns([1,6])
-    with c1:
+    c1, c2 = st.columns([0.001,6])
+    
+    # SIDEBAR
+    with st.sidebar:
         st.write(" ")
 
-        st.write("**Filter Options**")
+        st.write("**Advanced Filter Options**")
         min_seat_num = st.number_input("Min. Seat Number", min_value=1,step=1, max_value=50, value=1, placeholder="Min. Free Seats")
         only_vollkasko = st.toggle("Only Vollkasko", value=False)
 
@@ -100,24 +142,50 @@ if st.session_state["current_state"] == 1:
         car_type = st.selectbox("Car Type", options=["small", "sports", "luxury", "family"],index=None, placeholder="Choose type of car")
 
         min_free_km = st.number_input("Min. free Kilometers", min_value=0, step=50, value=0)
+
+        with st.expander("Advanced Settings", expanded=False):
+            st.session_state["free_km_range"] = st.number_input("Free Kilometer Width", min_value=1, step=10, value=st.session_state["free_km_range"])
+            st.session_state["price_range_width"]  = st.number_input("Price Range Width", min_value = 1, step=5, value=st.session_state["price_range_width"])
+        refresh_button = st.button("Refresh", type="primary", use_container_width=True)
     
-# Choose Page 
-    st.write(" ")
-    _, c2, c3 = st.columns([2,1,4])
+    # ALL THE OFFERS
     with c2:
-        page_size = st.selectbox("Num. Results per Page", options=[20,50,100], index=0)
-        if not page_size == st.session_state["page_size"]:
-            st.session_state["page_size"] = page_size
+        
+        render_all_offers(st.session_state["offers"], st.session_state["page_size"])
+    # Choose Page 
+    st.write(" ")
+    _, c1, c2, c3,c4,c5,_ = st.columns([1.1,1, 0.75,0.75,0.8,0.75,1.7], vertical_alignment="center")
+    with c1:
+        st.write("Ergebnisse pro Seite: ")
+    with c2:
+        page_size = st.selectbox("Num. Results per Page", options=[20,50,100], index=0, label_visibility="collapsed")
     with c3:
+        prev = st.button("Previous",use_container_width=True, disabled=(st.session_state["current_page_index"] == 0))
+
+    with c4:
+        current_page = st.session_state["current_page_index"]
+        st.write(f"**Current Page: {current_page + 1}**")
+    with c5:
         current_page = st.session_state["current_page_index"] + 1
-        st.pills("Pages",[f"Current Page ({current_page})","Next Page"])
+        next = st.button("Next", use_container_width=True)
+
 
 
 ## BACKEND ##################
+def wait_for_response():
+    c1, c2, c3 = st.columns([3,1,3])
+    with c2:
+        st.toast("Fetching new data")
+        with st.spinner():
+            response = get_dummy_response()
+            return response
+        st.toast("Finished fetching new data")
 
 def perform_search():
     page_index = st.session_state["current_page_index"]
     page_size = st.session_state["page_size"]
+    free_km_range = st.session_state["free_km_range"]
+    price_range_width = st.session_state["price_range_width"] 
     print(f"""Perform search for Region {region_id}, 
           Begin Date {begin_date}, 
           Begin Time {begin_time}, 
@@ -131,7 +199,9 @@ def perform_search():
           OnlyVollkasko {only_vollkasko},
           Price Range ({min_price},{max_price}),
           Car Types {car_type},
-          MinFreeKM {min_free_km}""")
+          MinFreeKM {min_free_km},
+          Free km range {free_km_range},
+          Price Range width {price_range_width}""")
     
     combined_start_time = datetime.datetime.combine(begin_date, begin_time)
     combined_end_time = datetime.datetime.combine(end_date, end_time)
@@ -146,8 +216,8 @@ def perform_search():
                 "sortOrder":order, 
                 "page":page_index,
                 "pageSize":page_size,
-                "priceRangeWidth":100,      # NOT IMPLEMENTED
-                "minFreeKilometerWidth":100 # NOT IMPLEMENTED
+                "priceRangeWidth":price_range_width,
+                "minFreeKilometerWidth":free_km_range
                 }
     if min_seat_num > 1:
         send_data.update({"minNumberSeats":min_seat_num})
@@ -165,17 +235,39 @@ def perform_search():
     print("Send Data", send_data)
 
     # response = requests.post(ENDPOINT_URL, data={})
+    response = wait_for_response()
+    st.session_state["offers"] = response
     
 if search_button:
-
-    if st.session_state["current_state"] == 0:
-        st.session_state["current_state"] = 1
-        perform_search()
-        st.rerun()
+    if region_id == -1:
+        st.error("Please select a region first. Thanks!")
     else:
-        perform_search()
+        if st.session_state["current_state"] == 0:
+            st.session_state["current_state"] = 1
+            perform_search()
+            st.rerun()
+        else:
+            perform_search()
+            st.rerun()
 
+if refresh_button:
+    perform_search()
+    st.rerun()
 
+if prev:
+    st.session_state["current_page_index"] -= 1
+    perform_search()
+    st.rerun()
+
+if next:
+    st.session_state["current_page_index"] += 1
+    perform_search()
+    st.rerun()
+
+if not page_size == st.session_state["page_size"]:
+     st.session_state["page_size"] = page_size
+     perform_search()
+     st.rerun()
 
 
 
