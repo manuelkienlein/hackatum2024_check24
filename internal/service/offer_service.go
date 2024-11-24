@@ -58,7 +58,7 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 		// Check aggregate filters
 		minNumberSeatsFlag := params.MinNumberSeats == nil || numberSeats >= *params.MinNumberSeats
 		minPriceFlag := params.MinPrice == nil || price >= *params.MinPrice
-		maxPriceFlag := params.MaxPrice == nil || price <= *params.MaxPrice
+		maxPriceFlag := params.MaxPrice == nil || price < *params.MaxPrice
 		carTypeFlag := params.CarType == nil || carType == *params.CarType
 		onlyVollkaskoFlag := params.OnlyVollkasko == nil || onlyVollkasko == *params.OnlyVollkasko
 		minFreeKilometerFlag := params.MinFreeKilometer == nil || freeKilometers >= *params.MinFreeKilometer
