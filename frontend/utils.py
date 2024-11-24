@@ -3,6 +3,7 @@ from datetime import datetime
 
 LUX_CAR_IMAGE_PATH = "resources/luxury.png"
 LUX_CAR_IMAGE_PATH_V2 = "resources/v2/luxury_icon.jpg"
+
 SPORT_CAR_IMAGE_PATH = "resources/sportscar.png"
 SPORT_CAR_IMAGE_PATH_V2 = "resources/v2/sportscar_icon.jpg"
 FAMILY_CAR_IMAGE_PATH = "resources/familycar.png"
@@ -10,12 +11,17 @@ FAMILY_CAR_IMAGE_PATH_V2 = "resources/v2/familycar_icon.jpg"
 SMALL_CAR_IMAGE_PATH = "resources/smallcar.png"
 SMALL_CAR_IMAGE_PATH_V2 = "resources/v2/smallcar_icon.jpg"
 
+LUX_CAR_IMAGE_PATH_FINAL = "resources/final/luxurycar.jpg"
+SPORT_CAR_IMAGE_PATH_FINAL = "resources/final/sportscar.jpg"
+FAMILY_CAR_IMAGE_PATH_FINAL = "resources/final/familycar.jpg"
+SMALL_CAR_IMAGE_PATH_FINAL = "resources/final/smallcar.jpg"
+
 
 car_type_to_image = { 
-    "small":SMALL_CAR_IMAGE_PATH_V2,
-    "sports":SPORT_CAR_IMAGE_PATH_V2,
-    "luxury":LUX_CAR_IMAGE_PATH_V2,
-    "family":FAMILY_CAR_IMAGE_PATH_V2
+    "small":SMALL_CAR_IMAGE_PATH_FINAL,
+    "sports":SPORT_CAR_IMAGE_PATH_FINAL,
+    "luxury":LUX_CAR_IMAGE_PATH_FINAL,
+    "family":FAMILY_CAR_IMAGE_PATH_FINAL
 }
 
 def render_all_offers(offers, limit_index):

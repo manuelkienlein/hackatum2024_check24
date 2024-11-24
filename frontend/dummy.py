@@ -6,5 +6,5 @@ with open("dummy_response2.json", "r", encoding="utf-8") as file:
     
 
 def get_dummy_response():
-    time.sleep(5)
+    time.sleep(2)
     return response

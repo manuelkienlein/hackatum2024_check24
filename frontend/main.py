@@ -152,7 +152,7 @@ if st.session_state["current_state"] == 1:
     with c2:
         
         render_all_offers(st.session_state["offers"], st.session_state["page_size"])
-# Choose Page 
+    # Choose Page 
     st.write(" ")
     _, c1, c2, c3,c4,c5,_ = st.columns([1.1,1, 0.75,0.75,0.8,0.75,1.7], vertical_alignment="center")
     with c1:
