@@ -13,15 +13,17 @@ class LogParser:
         self.error_entries = []
         self.current_state = defaultdict(list)
         self.compacted_logs = []
+        self.line_to_entry_map = {}
 
     def parse_logs(self):
         with open(self.log_file, 'r') as file:
-            for line in file:
+            for line_number, line in enumerate(file, start=1):  # Zeilennummer verfolgen
                 try:
                     log_entry = json.loads(line.strip())
+                    self.line_to_entry_map[line_number] = log_entry  # Zeilennummer speichern
                     self._process_entry(log_entry)
                 except json.JSONDecodeError:
-                    print(f"Invalid JSON: {line.strip()}")
+                    print(f"Invalid JSON in line {line_number}: {line.strip()}")
 
     def _process_entry(self, log_entry):
         request_type = log_entry.get("requestType")
@@ -42,15 +44,17 @@ class LogParser:
 
     def compare_read_results(self):
         mismatches = []
-        for entry in self.read_entries:
-            expected = entry["log"]["expected_result"]
-            actual = entry["log"]["actual_result"]
-            if expected != actual:
-                mismatches.append({
-                    "id": entry["log"]["id"],
-                    "expected": expected,
-                    "actual": actual
-                })
+        for line_number, entry in self.line_to_entry_map.items():
+            if entry.get("requestType") == "READ":
+                expected = entry["log"]["expected_result"]
+                actual = entry["log"]["actual_result"]
+                if expected != actual:
+                    mismatches.append({
+                        "line_number": line_number,  # Zeilennummer speichern
+                        "id": entry["log"]["id"],
+                        "expected": expected,
+                        "actual": actual
+                    })
         return mismatches
 
     def print_summary(self):
@@ -64,15 +68,22 @@ class LogParser:
 
         mismatches = self.compare_read_results()
         print(f"\nMismatches found in READ entries: {len(mismatches)}")
-        return # DEBUGGING: ONLY DO AVOID TERMINAL BUFFER OVERFLOW
+
+        #return # DEBUGGING: ONLY DO AVOID TERMINAL BUFFER OVERFLOW
+
         #for mismatch in mismatches:
+        #    line_number = mismatch["line_number"]
+        #    print(f"\nID: {mismatch['id']} (Line: {line_number})")
         #    print(f"\nID: {mismatch['id']}")
         #    print(f"Expected: {json.dumps(mismatch['expected'], indent=2)}")
         #    print(f"Actual: {json.dumps(mismatch['actual'], indent=2)}\n")
         mismatch = mismatches[0]
-        print(f"\nID: {mismatch['id']}")
+        line_number = mismatch["line_number"]
+        print(f"\nID: {mismatch['id']} (Line: {line_number})")
         print(f"\033[92m Expected: {json.dumps(mismatch['expected'])}")
         print(f"\033[93m Actual: {json.dumps(mismatch['actual'])}\n")
+
+        return # DEBUGGING: ONLY DO AVOID TERMINAL BUFFER OVERFLOW
 
         print("Current Database State:")
         for region, offers in self.current_state.items():

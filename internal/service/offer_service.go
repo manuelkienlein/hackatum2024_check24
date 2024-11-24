@@ -150,9 +150,3 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 		VollkaskoCount:     vollkaskoCount,
 	}, nil
 }
-
-// Construct a SQL query from filterParams
-func (s *OfferService) buildSQLQuery(params models.OfferFilterParams) string {
-	// TODO (deprecated)
-	return ""
-}
