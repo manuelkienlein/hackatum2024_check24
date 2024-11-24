@@ -55,9 +55,6 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 			return models.OfferQueryResponse{}, err
 		}
 
-		// Add offer to list
-		offers = append(offers, models.ResponseOffer{ID: id, Data: data})
-
 		// Aggregate price ranges
 		priceRangeKey := fmt.Sprintf("%d-%d", (price/params.PriceRangeWidth)*params.PriceRangeWidth, ((price/params.PriceRangeWidth)+1)*params.PriceRangeWidth)
 		priceRangeCounts[priceRangeKey]++
@@ -96,6 +93,11 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 			vollkaskoCount.TrueCount++
 		} else {
 			vollkaskoCount.FalseCount++
+		}
+
+		// if all aggregate filters are satisfied (and not nil), add the offer to the response
+		if (params.MinNumberSeats == nil || numberSeats >= *params.MinNumberSeats) && (params.MinPrice == nil || price >= *params.MinPrice) && (params.MaxPrice == nil || price <= *params.MaxPrice) && (params.CarType == nil || carType == *params.CarType) && (params.OnlyVollkasko == nil || onlyVollkasko == *params.OnlyVollkasko) && (params.MinFreeKilometer == nil || freeKilometers >= *params.MinFreeKilometer) {
+			offers = append(offers, models.ResponseOffer{ID: id, Data: data})
 		}
 	}
 
