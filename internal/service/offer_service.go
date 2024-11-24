@@ -55,49 +55,67 @@ func (s *OfferService) GetOffers(c *fiber.Ctx, params models.OfferFilterParams) 
 			return models.OfferQueryResponse{}, err
 		}
 
+		// Check aggregate filters
+		minNumberSeatsFlag := params.MinNumberSeats == nil || numberSeats >= *params.MinNumberSeats
+		minPriceFlag := params.MinPrice == nil || price >= *params.MinPrice
+		maxPriceFlag := params.MaxPrice == nil || price <= *params.MaxPrice
+		carTypeFlag := params.CarType == nil || carType == *params.CarType
+		onlyVollkaskoFlag := params.OnlyVollkasko == nil || onlyVollkasko == *params.OnlyVollkasko
+		minFreeKilometerFlag := params.MinFreeKilometer == nil || freeKilometers >= *params.MinFreeKilometer
+
+		// if all aggregate filters are satisfied (and not nil), add the offer to the response
+		if minNumberSeatsFlag && minPriceFlag && maxPriceFlag && carTypeFlag && onlyVollkaskoFlag && minFreeKilometerFlag {
+			offers = append(offers, models.ResponseOffer{ID: id, Data: data})
+		}
+
 		// Aggregate price ranges
-		priceRangeKey := fmt.Sprintf("%d-%d", (price/params.PriceRangeWidth)*params.PriceRangeWidth, ((price/params.PriceRangeWidth)+1)*params.PriceRangeWidth)
-		priceRangeCounts[priceRangeKey]++
+		if minNumberSeatsFlag && carTypeFlag && onlyVollkaskoFlag && minFreeKilometerFlag {
+			priceRangeKey := fmt.Sprintf("%d-%d", (price/params.PriceRangeWidth)*params.PriceRangeWidth, ((price/params.PriceRangeWidth)+1)*params.PriceRangeWidth)
+			priceRangeCounts[priceRangeKey]++
+		}
 
 		// Aggregate car type counts
-		switch carType {
-		case "small":
-			carTypeCounts.Small++
-		case "sports":
-			carTypeCounts.Sports++
-		case "luxury":
-			carTypeCounts.Luxury++
-		case "family":
-			carTypeCounts.Family++
+		if minNumberSeatsFlag && minPriceFlag && maxPriceFlag && onlyVollkaskoFlag && minFreeKilometerFlag {
+			switch carType {
+			case "small":
+				carTypeCounts.Small++
+			case "sports":
+				carTypeCounts.Sports++
+			case "luxury":
+				carTypeCounts.Luxury++
+			case "family":
+				carTypeCounts.Family++
+			}
 		}
 
 		// Aggregate seats count
-		found := false
-		for i, sc := range seatsCount {
-			if sc.NumberSeats == numberSeats {
-				seatsCount[i].Count++
-				found = true
-				break
+		if minPriceFlag && maxPriceFlag && carTypeFlag && onlyVollkaskoFlag && minFreeKilometerFlag {
+			found := false
+			for i, sc := range seatsCount {
+				if sc.NumberSeats == numberSeats {
+					seatsCount[i].Count++
+					found = true
+					break
+				}
 			}
-		}
-		if !found {
-			seatsCount = append(seatsCount, models.SeatsCount{NumberSeats: numberSeats, Count: 1})
+			if !found {
+				seatsCount = append(seatsCount, models.SeatsCount{NumberSeats: numberSeats, Count: 1})
+			}
 		}
 
 		// Aggregate free kilometer ranges
-		freeKilometerKey := fmt.Sprintf("%d-%d", (freeKilometers/params.MinFreeKilometerWidth)*params.MinFreeKilometerWidth, ((freeKilometers/params.MinFreeKilometerWidth)+1)*params.MinFreeKilometerWidth)
-		freeKilometerCounts[freeKilometerKey]++
-
-		// Aggregate vollkasko count
-		if onlyVollkasko {
-			vollkaskoCount.TrueCount++
-		} else {
-			vollkaskoCount.FalseCount++
+		if minNumberSeatsFlag && minPriceFlag && maxPriceFlag && carTypeFlag && onlyVollkaskoFlag {
+			freeKilometerKey := fmt.Sprintf("%d-%d", (freeKilometers/params.MinFreeKilometerWidth)*params.MinFreeKilometerWidth, ((freeKilometers/params.MinFreeKilometerWidth)+1)*params.MinFreeKilometerWidth)
+			freeKilometerCounts[freeKilometerKey]++
 		}
 
-		// if all aggregate filters are satisfied (and not nil), add the offer to the response
-		if (params.MinNumberSeats == nil || numberSeats >= *params.MinNumberSeats) && (params.MinPrice == nil || price >= *params.MinPrice) && (params.MaxPrice == nil || price <= *params.MaxPrice) && (params.CarType == nil || carType == *params.CarType) && (params.OnlyVollkasko == nil || onlyVollkasko == *params.OnlyVollkasko) && (params.MinFreeKilometer == nil || freeKilometers >= *params.MinFreeKilometer) {
-			offers = append(offers, models.ResponseOffer{ID: id, Data: data})
+		// Aggregate vollkasko count
+		if minNumberSeatsFlag && minPriceFlag && maxPriceFlag && carTypeFlag && minFreeKilometerFlag {
+			if onlyVollkasko {
+				vollkaskoCount.TrueCount++
+			} else {
+				vollkaskoCount.FalseCount++
+			}
 		}
 	}
 
